@@ -16,4 +16,9 @@ enum VariantBeverage: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    public static function select(): array
+    {
+        return array_column(self::cases(), 'name', 'value');
+    }
 }

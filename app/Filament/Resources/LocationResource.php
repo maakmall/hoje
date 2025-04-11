@@ -14,6 +14,8 @@ class LocationResource extends Resource
 {
     protected static ?string $model = Location::class;
     protected static ?string $navigationIcon = 'heroicon-o-map-pin';
+    protected static ?string $navigationGroup = 'Data';
+    protected static ?int $navigationSort = 3;
     protected static ?string $modelLabel = 'Lokasi';
 
     public static function form(Form $form): Form

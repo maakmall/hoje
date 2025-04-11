@@ -20,6 +20,8 @@ class MenuResource extends Resource
 {
     protected static ?string $model = Menu::class;
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
+    protected static ?string $navigationGroup = 'Data';
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {

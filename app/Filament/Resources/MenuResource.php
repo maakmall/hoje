@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\MenuCategory;
 use App\Enums\VariantBeverage;
 use App\Filament\Resources\MenuResource\Pages;
+use App\Filament\Resources\MenuResource\Widgets\MenuOverview;
 use App\Helpers\Numeric;
 use App\Models\Menu;
 use App\Models\MenuPrice;
@@ -16,7 +17,6 @@ use Filament\Resources\Resource;
 use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 
 class MenuResource extends Resource
@@ -197,6 +197,13 @@ class MenuResource extends Resource
             'index' => Pages\ListMenus::route('/'),
             'create' => Pages\CreateMenu::route('/create'),
             'edit' => Pages\EditMenu::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getWidgets(): array
+    {
+        return [
+            MenuOverview::class,
         ];
     }
 }

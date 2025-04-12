@@ -16,6 +16,7 @@ use Filament\Resources\Resource;
 use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
 
 class MenuResource extends Resource
@@ -146,7 +147,6 @@ class MenuResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('prices.price')
                     ->label('Harga')
-                    ->sortable()
                     ->formatStateUsing(function (Menu $record): string|HtmlString {
                         if ($record->prices->count() > 1) {
                             $prices = $record->prices->implode(function (MenuPrice $price) {

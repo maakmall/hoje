@@ -14,6 +14,7 @@ use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\RawJs;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -136,42 +137,54 @@ class MenuResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('image')
-                    ->label('Gambar')
-                    ->alignCenter()
-                    ->visibleFrom('md'),
-                Tables\Columns\TextColumn::make('name')
-                    ->label('Nama')
-                    ->description(fn(Menu $record): ?string => $record->description)
-                    ->wrap()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('prices.price')
-                    ->label('Harga')
-                    ->formatStateUsing(function (Menu $record): string|HtmlString {
-                        if ($record->prices->count() > 1) {
-                            $prices = $record->prices->implode(function (MenuPrice $price) {
-                                return Numeric::rupiah($price->price, true) .
-                                    ' (' . $price->variant_beverage->name . ')';
-                            }, '<br>');
+                Tables\Columns\Layout\Stack::make([
+                    Tables\Columns\ImageColumn::make('image')
+                        ->label('Gambar')
+                        ->height('100%')
+                        ->width('100%')
+                        ->alignCenter(),
+                    Tables\Columns\TextColumn::make('name')
+                        ->label('Nama')
+                        ->weight(FontWeight::Medium)
+                        ->description(fn(Menu $record): string => $record->description ?? '-')
+                        ->wrap()
+                        ->searchable(),
+                    Tables\Columns\TextColumn::make('prices.price')
+                        ->label('Harga')
+                        ->formatStateUsing(function (Menu $record): string|HtmlString {
+                            if ($record->prices->count() > 1) {
+                                $prices = $record->prices->implode(function (MenuPrice $price) {
+                                    return Numeric::rupiah($price->price, true) .
+                                        ' (' . $price->variant_beverage->name . ')';
+                                }, '<br>');
 
-                            return new HtmlString($prices);
-                        }
+                                return new HtmlString($prices);
+                            }
 
-                        return Numeric::rupiah($record->prices->first()->price, true);
-                    }),
-                Tables\Columns\TextColumn::make('category')
-                    ->label('Kategori')
-                    ->badge()
-                    ->color(fn(MenuCategory $state): string => match ($state->value) {
-                        'food' => 'success',
-                        'beverage' => 'gray',
-                    })
-                    ->formatStateUsing(fn(MenuCategory $state): string => $state->label())
-                    ->visibleFrom('md'),
-                Tables\Columns\IconColumn::make('availability')
-                    ->label('Tersedia')
-                    ->alignCenter()
-                    ->boolean(),
+                            return Numeric::rupiah($record->prices->first()->price, true);
+                        }),
+                    Tables\Columns\Layout\Split::make([
+                        Tables\Columns\TextColumn::make('category')
+                            ->label('Kategori')
+                            ->badge()
+                            ->color(fn(MenuCategory $state): string => match ($state->value) {
+                                'food' => 'success',
+                                'beverage' => 'gray',
+                            })
+                            ->formatStateUsing(fn(MenuCategory $state): string => $state->label()),
+                        Tables\Columns\IconColumn::make('availability')
+                            ->label('Tersedia')
+                            ->alignCenter()
+                            ->tooltip(
+                                fn(Menu $record): string => $record->availability ? 'Tersedia' : 'Tidak Tersedia'
+                            )
+                            ->boolean(),
+                    ])
+                ])->space(3),
+            ])
+            ->contentGrid([
+                'md' => 2,
+                'xl' => 3,
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('availability')
@@ -179,15 +192,6 @@ class MenuResource extends Resource
                     ->placeholder('Semua')
                     ->trueLabel('Tersedia')
                     ->falseLabel('Tidak Tersedia'),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make()
-                    ->iconButton(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ]);
     }
 

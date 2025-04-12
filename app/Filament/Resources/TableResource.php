@@ -14,6 +14,8 @@ class TableResource extends Resource
 {
     protected static ?string $model = TableModel::class;
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Data';
+    protected static ?int $navigationSort = 4;
     protected static ?string $modelLabel = 'Meja';
 
     public static function form(Form $form): Form
@@ -38,13 +40,12 @@ class TableResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('number')
-                    ->label('Nomor')
+                    ->label('No')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('location.name')
                     ->label('Lokasi')
-                    ->numeric()
-                    ->sortable(),
+                    ->numeric(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('location_id')

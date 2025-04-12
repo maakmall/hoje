@@ -30,4 +30,11 @@ class ListMenus extends ListRecords
                 ->modifyQueryUsing(fn(Builder $query): Builder => $query->where('category', MenuCategory::Beverage)),
         ];
     }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            MenuResource\Widgets\MenuOverview::class,
+        ];
+    }
 }

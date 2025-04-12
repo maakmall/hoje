@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\MenuCategory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -47,5 +48,21 @@ class Menu extends Model
     public function prices(): HasMany
     {
         return $this->hasMany(MenuPrice::class);
+    }
+
+    /**
+     * Get the food menu items.
+     */
+    public function scopeFood(Builder $query): Builder
+    {
+        return $query->where('category', MenuCategory::Food);
+    }
+
+    /**
+     * Get the beverage menu items.
+     */
+    public function scopeBeverage(Builder $query): Builder
+    {
+        return $query->where('category', MenuCategory::Beverage);
     }
 }

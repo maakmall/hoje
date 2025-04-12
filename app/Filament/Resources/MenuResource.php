@@ -5,7 +5,9 @@ namespace App\Filament\Resources;
 use App\Enums\MenuCategory;
 use App\Enums\VariantBeverage;
 use App\Filament\Resources\MenuResource\Pages;
+use App\Helpers\Numeric;
 use App\Models\Menu;
+use App\Models\MenuPrice;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -140,21 +142,22 @@ class MenuResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama')
                     ->description(fn(Menu $record): ?string => $record->description)
+                    ->wrap()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('prices.price')
                     ->label('Harga')
                     ->sortable()
-                    ->formatStateUsing(function ($record) {
+                    ->formatStateUsing(function (Menu $record): string|HtmlString {
                         if ($record->prices->count() > 1) {
-                            $prices = $record->prices->implode(function ($price) {
-                                return 'Rp ' . number_format($price->price, 0, ',', '.') .
+                            $prices = $record->prices->implode(function (MenuPrice $price) {
+                                return Numeric::rupiah($price->price, true) .
                                     ' (' . $price->variant_beverage->name . ')';
                             }, '<br>');
 
                             return new HtmlString($prices);
                         }
 
-                        return 'Rp ' . number_format($record->prices->first()->price, 0, ',', '.');
+                        return Numeric::rupiah($record->prices->first()->price, true);
                     }),
                 Tables\Columns\TextColumn::make('category')
                     ->label('Kategori')

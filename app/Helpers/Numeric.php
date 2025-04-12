@@ -7,8 +7,10 @@ class Numeric
     /**
      * Format number to Indonesian Rupiah
      */
-    public static function rupiah(int $nominal): string
+    public static function rupiah(int $nominal, bool $withRp = false): string
     {
-        return number_format($nominal, 0, '.', '.');
+        return $withRp
+            ? 'Rp ' . number_format($nominal, 0, '.', '.')
+            : number_format($nominal, 0, '.', '.');
     }
 }

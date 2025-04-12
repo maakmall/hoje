@@ -23,15 +23,16 @@ class LocationResource extends Resource
         return $form
             ->schema([
                 Forms\Components\TextInput::make('name')
-                    ->label('Nama Lokasi')
+                    ->label('Nama')
                     ->required()
-                    ->maxLength(50),
+                    ->maxLength(50)
+                    ->unique(ignoreRecord: true),
                 Forms\Components\TextInput::make('capacity')
                     ->label('Jumlah Kapasitas')
                     ->required()
                     ->suffix('Orang')
                     ->numeric()
-                    ->minValue(0),
+                    ->minValue(1),
             ]);
     }
 
@@ -40,7 +41,8 @@ class LocationResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Nama Lokasi'),
+                    ->label('Nama')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('capacity')
                     ->label('Kapasitas')
                     ->numeric()

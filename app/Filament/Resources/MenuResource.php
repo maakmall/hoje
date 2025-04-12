@@ -173,6 +173,13 @@ class MenuResource extends Resource
                     ->alignCenter()
                     ->boolean(),
             ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('availability')
+                    ->label('Tersedia')
+                    ->placeholder('Semua')
+                    ->trueLabel('Tersedia')
+                    ->falseLabel('Tidak Tersedia'),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->iconButton(),

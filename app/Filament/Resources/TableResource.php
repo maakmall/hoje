@@ -40,13 +40,12 @@ class TableResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('number')
-                    ->label('Nomor')
+                    ->label('No')
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('location.name')
                     ->label('Lokasi')
-                    ->numeric()
-                    ->sortable(),
+                    ->numeric(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('location_id')

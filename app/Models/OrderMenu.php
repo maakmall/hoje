@@ -22,6 +22,7 @@ class OrderMenu extends Model
     protected $fillable = [
         'order_id',
         'menu_id',
+        'variant_beverage',
         'quantity',
         'subtotal_price',
     ];

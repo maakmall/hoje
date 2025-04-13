@@ -41,7 +41,9 @@ class OrderResource extends Resource
                                 Forms\Components\Section::make()
                                     ->schema([
                                         Forms\Components\Select::make('user_id')
-                                            ->relationship('user', 'name')
+                                            ->relationship('user', 'name', function (Builder $query): void {
+                                                $query->orderBy('name');
+                                            })
                                             ->label('Pelanggan')
                                             ->getOptionLabelFromRecordUsing(
                                                 fn(User $record): string => "{$record->id} - {$record->name}"
@@ -173,19 +175,31 @@ class OrderResource extends Resource
                         $set('subtotal_price', 0);
                     }
                 })
-                ->disableOptionWhen(function ($value, $label, Get $get) {
-                    $selectedMenuIds = collect($get('../../orderMenus'))
-                        ->pluck('menu_id')
-                        ->filter()
-                        ->toArray();
+                ->disableOptionWhen(function (int $value, Get $get): bool {
+                    $currentPath = $get('__component.path');
+                    $allItems = collect($get('../../orderMenus'))->filter();
+                    $otherItems = $allItems->filter(fn($item, $key) => $key !== $currentPath);
 
-                    $currentIndex = $get('__index');
-                    if ($currentIndex !== null) {
-                        $currentMenuId = data_get($get("../../orderMenus.{$currentIndex}"), 'menu_id');
-                        $selectedMenuIds = array_filter($selectedMenuIds, fn($id) => $id != $currentMenuId);
+                    $usedVariants = $otherItems
+                        ->where('menu_id', $value)
+                        ->pluck('variant_beverage')
+                        ->filter()
+                        ->map(fn($v) => is_object($v) ? $v->value : $v)
+                        ->unique()
+                        ->values();
+
+                    $menuPrices = static::getMenuPrices($value);
+
+                    if ($menuPrices->count() <= 1) {
+                        return $otherItems->pluck('menu_id')->contains($value);
                     }
 
-                    return in_array($value, $selectedMenuIds);
+                    $menuVariants = $menuPrices
+                        ->pluck('variant_beverage')
+                        ->map(fn($v) => is_object($v) ? $v->value : $v)
+                        ->unique();
+
+                    return $menuVariants->diff($usedVariants)->isEmpty();
                 }),
             Forms\Components\Select::make('variant_beverage')
                 ->label('Varian')
@@ -193,6 +207,18 @@ class OrderResource extends Resource
                 ->options(VariantBeverage::select())
                 ->live()
                 ->columnSpan(2)
+                ->disableOptionWhen(function (string $value, Get $get): bool {
+                    $currentPath = $get('__component.path');
+                    $menuId = $get('menu_id');
+
+                    if (!$menuId) return false;
+
+                    $allItems = collect($get('../../orderMenus'))->filter();
+
+                    return $allItems
+                        ->filter(fn($item, $key): bool => $key !== $currentPath && $item['menu_id'] === $menuId)
+                        ->contains('variant_beverage', $value);
+                })
                 ->visible(function (Get $get): bool {
                     if ($get('menu_id')) {
                         if (static::getMenuPrices($get('menu_id'))->count() > 1) {
@@ -260,9 +286,9 @@ class OrderResource extends Resource
         ];
     }
 
-    public static function getMenuPrices(int $menuId): Collection
+    public static function getMenuPrices(?int $menuId): Collection
     {
-        return once(function() use ($menuId): Collection {
+        return once(function () use ($menuId): Collection {
             return MenuPrice::where('menu_id', $menuId)->get();
         });
     }

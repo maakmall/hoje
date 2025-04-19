@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\VariantBeverage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -26,6 +27,18 @@ class OrderMenu extends Model
         'quantity',
         'subtotal_price',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'variant_beverage' => VariantBeverage::class,
+        ];
+    }
 
     /**
      * The order that belongs to the order menu.

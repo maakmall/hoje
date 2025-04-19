@@ -118,7 +118,7 @@ class ReservationResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Pelanggan')
-                    ->placeholder('Tanpa User')
+                    ->placeholder('-')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('datetime')
                     ->label('Tanggal')
@@ -149,15 +149,6 @@ class ReservationResource extends Resource
 
                         return $query;
                     }),
-            ])
-            ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->iconButton()
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ]);
     }
 
@@ -173,7 +164,7 @@ class ReservationResource extends Resource
         return [
             'index' => Pages\ListReservations::route('/'),
             'create' => Pages\CreateReservation::route('/create'),
-            'edit' => Pages\EditReservation::route('/{record}/edit'),
+            'view' => Pages\ViewReservation::route('/{record}'),
         ];
     }
 

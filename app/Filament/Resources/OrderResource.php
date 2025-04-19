@@ -91,7 +91,7 @@ class OrderResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Pelanggan')
-                    ->placeholder('Tanpa User')
+                    ->placeholder('-')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('datetime')
@@ -103,10 +103,6 @@ class OrderResource extends Resource
                     ->prefix('Rp ')
                     ->numeric(thousandsSeparator: '.')
                     ->sortable(),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make()
-                    ->iconButton(),
             ]);
     }
 
@@ -122,7 +118,7 @@ class OrderResource extends Resource
         return [
             'index' => Pages\ListOrders::route('/'),
             'create' => Pages\CreateOrder::route('/create'),
-            'edit' => Pages\EditOrder::route('/{record}/edit'),
+            'view' => Pages\ViewOrder::route('/{record}'),
         ];
     }
 

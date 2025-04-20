@@ -14,4 +14,5 @@ return [
     'email' => ':Attribute harus berupa alamat email yang valid',
     'numeric' => ':Attribute harus berupa angka',
     'after_or_equal' => ':Attribute harus setelah :date',
+    'confirmed' => 'Konfirmasi password tidak sesuai'
 ];

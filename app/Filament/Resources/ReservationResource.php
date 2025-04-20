@@ -102,8 +102,7 @@ class ReservationResource extends Resource
                                 ->columns(10)
                                 ->columnSpanFull()
                                 ->addActionLabel('Tambah Menu')
-                                ->schema(self::getOrderMenuSchema())
-                                ->defaultItems(3),
+                                ->schema(self::getOrderMenuSchema()),
                         ]),
                     Forms\Components\Wizard\Step::make('Pembayaran')
                         ->icon('heroicon-m-credit-card')
@@ -116,6 +115,9 @@ class ReservationResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Pelanggan')
                     ->placeholder('-')

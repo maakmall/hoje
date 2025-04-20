@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Reservation extends Model
 {
@@ -53,5 +55,18 @@ class Reservation extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    /**
+     * The order associated with the reservation.
+     */
+    public function order(): HasOne
+    {
+        return $this->hasOne(Order::class);
+    }
+
+    public function orderMenus(): HasManyThrough
+    {
+        return $this->hasManyThrough(OrderMenu::class, Order::class);
     }
 }

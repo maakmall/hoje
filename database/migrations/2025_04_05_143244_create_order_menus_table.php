@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\VariantBeverage;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -15,6 +16,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('order_id');
             $table->foreignId('menu_id');
+            $table->enum('variant_beverage', VariantBeverage::values())->nullable();
             $table->integer('quantity');
             $table->integer('subtotal_price');
         });

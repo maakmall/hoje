@@ -6,6 +6,8 @@ use App\Enums\VariantBeverage;
 use App\Filament\Resources\ReservationResource\Pages;
 use App\Filament\Resources\ReservationResource\RelationManagers;
 use App\Helpers\Numeric;
+use App\Models\Menu;
+use App\Models\MenuPrice;
 use App\Models\Reservation;
 use App\Models\User;
 use App\Rules\ReservationCapacity;
@@ -17,6 +19,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\HtmlString;
 
 class ReservationResource extends Resource
@@ -33,6 +36,7 @@ class ReservationResource extends Resource
                 Forms\Components\Wizard::make([
                     Forms\Components\Wizard\Step::make('Reservasi')
                         ->description('Lengkapi data reservasi')
+                        ->icon('heroicon-m-clipboard-document-check')
                         ->columns(3)
                         ->schema([
                             Forms\Components\Group::make([
@@ -41,7 +45,9 @@ class ReservationResource extends Resource
                                     ->schema([
                                         Forms\Components\Select::make('user_id')
                                             ->label('Pelanggan')
-                                            ->relationship('user', 'name')
+                                            ->relationship('user', 'name', function (Builder $query): void {
+                                                $query->orderBy('name');
+                                            })
                                             ->columnSpanFull()
                                             ->getOptionLabelFromRecordUsing(
                                                 fn(User $record): string => "{$record->id} - {$record->name}"
@@ -67,6 +73,7 @@ class ReservationResource extends Resource
                                     ->schema([
                                         Forms\Components\DateTimePicker::make('datetime')
                                             ->label('Tanggal')
+                                            ->minDate(now())
                                             ->required(),
                                     ])
                             ]),
@@ -92,7 +99,6 @@ class ReservationResource extends Resource
                                 ]),
                             Forms\Components\Repeater::make('orderMenus')
                                 ->hiddenLabel()
-                                // ->relationship()
                                 ->columns(10)
                                 ->columnSpanFull()
                                 ->addActionLabel('Tambah Menu')
@@ -109,9 +115,12 @@ class ReservationResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Pelanggan')
-                    ->placeholder('Tanpa User')
+                    ->placeholder('-')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('datetime')
                     ->label('Tanggal')
@@ -142,15 +151,6 @@ class ReservationResource extends Resource
 
                         return $query;
                     }),
-            ])
-            ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->iconButton()
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ]);
     }
 
@@ -166,7 +166,7 @@ class ReservationResource extends Resource
         return [
             'index' => Pages\ListReservations::route('/'),
             'create' => Pages\CreateReservation::route('/create'),
-            'edit' => Pages\EditReservation::route('/{record}/edit'),
+            'view' => Pages\ViewReservation::route('/{record}'),
         ];
     }
 
@@ -174,7 +174,9 @@ class ReservationResource extends Resource
     {
         return [
             Forms\Components\Select::make('menu_id')
-                // ->relationship('menu', 'name')
+                ->options(
+                    fn(): Collection => Menu::pluck('name', 'id')
+                )
                 ->label('Menu')
                 ->searchable()
                 ->preload()
@@ -209,19 +211,31 @@ class ReservationResource extends Resource
                         $set('subtotal_price', 0);
                     }
                 })
-                ->disableOptionWhen(function ($value, $label, Get $get) {
-                    $selectedMenuIds = collect($get('../../orderMenus'))
-                        ->pluck('menu_id')
-                        ->filter()
-                        ->toArray();
+                ->disableOptionWhen(function (int $value, Get $get): bool {
+                    $currentPath = $get('__component.path');
+                    $allItems = collect($get('../../orderMenus'))->filter();
+                    $otherItems = $allItems->filter(fn($item, $key) => $key !== $currentPath);
 
-                    $currentIndex = $get('__index');
-                    if ($currentIndex !== null) {
-                        $currentMenuId = data_get($get("../../orderMenus.{$currentIndex}"), 'menu_id');
-                        $selectedMenuIds = array_filter($selectedMenuIds, fn($id) => $id != $currentMenuId);
+                    $usedVariants = $otherItems
+                        ->where('menu_id', $value)
+                        ->pluck('variant_beverage')
+                        ->filter()
+                        ->map(fn($v) => is_object($v) ? $v->value : $v)
+                        ->unique()
+                        ->values();
+
+                    $menuPrices = static::getMenuPrices($value);
+
+                    if ($menuPrices->count() <= 1) {
+                        return $otherItems->pluck('menu_id')->contains($value);
                     }
 
-                    return in_array($value, $selectedMenuIds);
+                    $menuVariants = $menuPrices
+                        ->pluck('variant_beverage')
+                        ->map(fn($v) => is_object($v) ? $v->value : $v)
+                        ->unique();
+
+                    return $menuVariants->diff($usedVariants)->isEmpty();
                 }),
             Forms\Components\Select::make('variant_beverage')
                 ->label('Varian')
@@ -229,6 +243,18 @@ class ReservationResource extends Resource
                 ->options(VariantBeverage::select())
                 ->live()
                 ->columnSpan(2)
+                ->disableOptionWhen(function (string $value, Get $get): bool {
+                    $currentPath = $get('__component.path');
+                    $menuId = $get('menu_id');
+
+                    if (!$menuId) return false;
+
+                    $allItems = collect($get('../../orderMenus'))->filter();
+
+                    return $allItems
+                        ->filter(fn($item, $key): bool => $key !== $currentPath && $item['menu_id'] === $menuId)
+                        ->contains('variant_beverage', $value);
+                })
                 ->visible(function (Get $get): bool {
                     if ($get('menu_id')) {
                         if (static::getMenuPrices($get('menu_id'))->count() > 1) {
@@ -294,5 +320,12 @@ class ReservationResource extends Resource
                     }
                 })
         ];
+    }
+
+    public static function getMenuPrices(?int $menuId): Collection
+    {
+        return once(function () use ($menuId): Collection {
+            return MenuPrice::where('menu_id', $menuId)->get();
+        });
     }
 }

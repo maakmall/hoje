@@ -19,4 +19,12 @@ enum Role: string
             self::cases()
         );
     }
+
+    /**
+     * Get the role user for select input
+     */
+    public static function select(): array
+    {
+        return array_column(self::cases(), 'name', 'value');
+    }
 }

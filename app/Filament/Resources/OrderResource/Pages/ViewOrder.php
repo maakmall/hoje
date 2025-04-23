@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\OrderResource\Pages;
 
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\VariantBeverage;
 use App\Filament\Resources\OrderResource;
 use App\Filament\Resources\ReservationResource;
@@ -82,8 +84,27 @@ class ViewOrder extends ViewRecord
                             ]),
                         Infolists\Components\Tabs\Tab::make('Pembayaran')
                             ->schema([
-                                Infolists\Components\Section::make()
-                                    ->schema([]),
+                                Infolists\Components\RepeatableEntry::make('payments')
+                                    ->hiddenLabel()
+                                    ->columns()
+                                    ->schema([
+                                        Infolists\Components\TextEntry::make('id')
+                                            ->label('ID Pembayaran'),
+                                        Infolists\Components\TextEntry::make('status')
+                                            ->badge()
+                                            ->formatStateUsing(
+                                                fn(PaymentStatus $state): string => $state->label()
+                                            ),
+                                        Infolists\Components\TextEntry::make('method')
+                                            ->label('Metode Pembayaran')
+                                            ->formatStateUsing(
+                                                fn(PaymentMethod $state): string => $state->label()
+                                            ),
+                                        Infolists\Components\TextEntry::make('amount')
+                                            ->label('Nominal')
+                                            ->prefix('Rp ')
+                                            ->numeric(thousandsSeparator: '.'),
+                                    ])
                             ])
                     ]),
                 Infolists\Components\Section::make('Menu')

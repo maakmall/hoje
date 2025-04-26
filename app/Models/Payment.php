@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
@@ -26,6 +27,9 @@ class Payment extends Model
         'method',
         'status',
         'datetime',
+        'transaction_id',
+        'va_number',
+        'qr_url',
     ];
 
     /**
@@ -39,5 +43,13 @@ class Payment extends Model
             'method' => PaymentMethod::class,
             'status' => PaymentStatus::class,
         ];
+    }
+
+    /**
+     * Get the belongs to order relation
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 }

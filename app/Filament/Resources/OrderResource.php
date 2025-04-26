@@ -191,6 +191,7 @@ class OrderResource extends Resource
             'index' => Pages\ListOrders::route('/'),
             'create' => Pages\CreateOrder::route('/create'),
             'view' => Pages\ViewOrder::route('/{record}'),
+            'payment' => Pages\ViewOrderPayment::route('/{record}/payment')
         ];
     }
 

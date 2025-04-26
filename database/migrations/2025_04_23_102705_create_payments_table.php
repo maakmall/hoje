@@ -21,6 +21,9 @@ return new class extends Migration
             $table->enum('status', PaymentStatus::values())
                 ->default(PaymentStatus::Pending);
             $table->datetime('datetime');
+            $table->string('transaction_id')->nullable();
+            $table->string('va_number')->nullable();
+            $table->string('qr_url')->nullable();
         });
     }
 

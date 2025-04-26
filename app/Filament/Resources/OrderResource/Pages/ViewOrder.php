@@ -61,6 +61,12 @@ class ViewOrder extends ViewRecord
                                         Infolists\Components\TextEntry::make('user.name')
                                             ->label('Pelanggan')
                                             ->placeholder('-'),
+                                        Infolists\Components\TextEntry::make('table.number')
+                                            ->label('Nomor Meja')
+                                            ->prefix('#')
+                                            ->placeholder('-')
+                                            ->weight(FontWeight::Medium)
+                                            ->size(TextEntrySize::Medium),
                                     ]),
                                 Infolists\Components\Section::make()
                                     ->columnSpan(1)

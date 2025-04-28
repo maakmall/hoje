@@ -202,6 +202,10 @@ class OrderResource extends Resource
     {
         $total = collect($get('orderMenus'))->sum('subtotal_price');
 
+        if ($get('payment_type') == 'dp') {
+            $total -= $total * 50 / 100;
+        }
+
         return Numeric::rupiah($total, true);
     }
 

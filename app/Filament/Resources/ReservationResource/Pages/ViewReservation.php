@@ -2,18 +2,107 @@
 
 namespace App\Filament\Resources\ReservationResource\Pages;
 
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\VariantBeverage;
+use App\Filament\Resources\OrderResource;
 use App\Filament\Resources\ReservationResource;
 use App\Helpers\Numeric;
 use App\Models\Menu;
 use App\Models\OrderMenu;
+use App\Models\Payment;
+use App\Models\Reservation;
+use App\Services\Midtrans;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use Filament\Actions;
+use Filament\Forms;
+use Filament\Support\Enums\MaxWidth;
+use Illuminate\Support\HtmlString;
 
 class ViewReservation extends ViewRecord
 {
     protected static string $resource = ReservationResource::class;
+
+    public function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('finish_payment')
+                ->label('Selesaikan Pembayaran')
+                ->visible(function (Reservation $record): bool {
+                    $total = $record->order->orderMenus->sum('subtotal_price');
+                    $amount = $record->order->payments->first()->amount;
+
+                    return $amount !== $total;
+                })
+                ->modalWidth(MaxWidth::Medium)
+                ->form([
+                    Forms\Components\Placeholder::make('total')
+                        ->inlineLabel()
+                        ->content(function(Reservation $record): HtmlString {
+                            $amount = $record->order->payments->first()->amount;
+
+                            return new HtmlString("<span class='text-lg font-semibold'>" .
+                                Numeric::rupiah($amount, true)
+                            . "</span>");
+                        }),
+                    Forms\Components\Radio::make('payment_method')
+                        ->label('Metode Pembayaran')
+                        ->required()
+                        ->options(PaymentMethod::select())
+                        ->inline()
+                        ->default('cash')
+                        ->inlineLabel(false),
+                ])
+                ->modalSubmitActionLabel('Bayar')
+                ->action(function (Reservation $record, array $data): void {
+                    $paymentMethod = PaymentMethod::from($data['payment_method']);
+                    $amount = $record->order->payments->first()->amount;
+
+                    $payment = [
+                        'datetime' => $record->order->datetime,
+                        'amount' => $amount,
+                        'method' => $paymentMethod,
+                        'status' => PaymentStatus::Pending,
+                    ];
+            
+                    if ($paymentMethod === PaymentMethod::Cash) {
+                        $payment['status'] = PaymentStatus::Paid;
+                    } else {
+                        $midtrans = new Midtrans();
+            
+                        $payload = [
+                            'payment_type' => $paymentMethod === PaymentMethod::Qris ? 'gopay' : 'bank_transfer',
+                            'transaction_details' => [
+                                'order_id' => $record->order->id,
+                                'gross_amount' => $amount,
+                            ],
+                        ];
+            
+                        if ($paymentMethod === PaymentMethod::Transfer) {
+                            $payload['bank_transfer'] = [
+                                'bank' => 'bca',
+                            ];
+                        }
+            
+                        $response = $midtrans->createTransaction($payload);
+            
+                        $payment['transaction_id'] = $response->transaction_id ?? null;
+                        $payment['va_number'] = $response->va_numbers[0]->va_number ?? null;
+                        $payment['qr_url'] = $response->actions[0]->url ?? null;
+                    }
+            
+                    $payment = $record->order->payments()->create($payment);
+
+                    $this->redirect(OrderResource::getUrl('payment', [
+                        'record' => $record->order,
+                        'redirect' => 'reservation',
+                        'pid' => $payment->id
+                    ]));
+                })
+        ];
+    }
 
     public function infolist(Infolist $infolist): Infolist
     {
@@ -94,7 +183,38 @@ class ViewReservation extends ViewRecord
                                     ])
                             ]),
                         Infolists\Components\Tabs\Tab::make('Pembayaran')
-                            ->schema([])
+                            ->schema([
+                                Infolists\Components\RepeatableEntry::make('order.payments')
+                                    ->hiddenLabel()
+                                    ->columns()
+                                    ->schema([
+                                        Infolists\Components\TextEntry::make('id')
+                                            ->label('ID Pembayaran'),
+                                        Infolists\Components\TextEntry::make('status')
+                                            ->badge()
+                                            ->formatStateUsing(
+                                                fn(PaymentStatus $state): string => $state->label()
+                                            )
+                                            ->url(function (Payment $record): ?string {
+                                                if ($record->status == PaymentStatus::Pending) {
+                                                    return OrderResource::getUrl('payment', [
+                                                        'record' => $record->order
+                                                    ]);
+                                                }
+
+                                                return null;
+                                            }),
+                                        Infolists\Components\TextEntry::make('method')
+                                            ->label('Metode Pembayaran')
+                                            ->formatStateUsing(
+                                                fn(PaymentMethod $state): string => $state->label()
+                                            ),
+                                        Infolists\Components\TextEntry::make('amount')
+                                            ->label('Nominal')
+                                            ->prefix('Rp ')
+                                            ->numeric(thousandsSeparator: '.'),
+                                    ])
+                            ])
                     ]),
             ]);
     }

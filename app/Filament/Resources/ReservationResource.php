@@ -3,8 +3,8 @@
 namespace App\Filament\Resources;
 
 use App\Enums\VariantBeverage;
+use App\Enums\PaymentMethod;
 use App\Filament\Resources\ReservationResource\Pages;
-use App\Filament\Resources\ReservationResource\RelationManagers;
 use App\Helpers\Numeric;
 use App\Models\Menu;
 use App\Models\MenuPrice;
@@ -105,8 +105,82 @@ class ReservationResource extends Resource
                                 ->schema(self::getOrderMenuSchema()),
                         ]),
                     Forms\Components\Wizard\Step::make('Pembayaran')
+                        ->description('Pilih metode pembayaran')
                         ->icon('heroicon-m-credit-card')
-                        ->schema([])
+                        ->columns(3)
+                        ->schema([
+                            Forms\Components\Section::make()
+                                ->columnSpan(2)
+                                ->schema([
+                                    Forms\Components\Placeholder::make('customer')
+                                        ->label('Pelanggan')
+                                        ->content(function (Get $get): string {
+                                            return $get('user_id')
+                                                ? User::find($get('user_id'))->name
+                                                : '-';
+                                        }),
+                                    Forms\Components\Radio::make('payment_method')
+                                        ->label('Metode Pembayaran')
+                                        ->required()
+                                        ->options(PaymentMethod::select())
+                                        ->inline()
+                                        ->inlineLabel(false),
+                                    Forms\Components\Radio::make('payment_type')
+                                        ->label('Jenis Pembayaran')
+                                        ->required()
+                                        ->options([
+                                            'dp' => 'DP 50%',
+                                            'full' => 'Bayar Penuh',
+                                        ])
+                                        ->inline()
+                                        ->live()
+                                        ->default('full')
+                                        ->inlineLabel(false)
+                                        ->afterStateUpdated(function(Get $get): void {
+                                            OrderResource::calculateTotal($get);
+                                        })
+                                ]),
+                            Forms\Components\Section::make()
+                                ->columnSpan(1)
+                                ->schema([
+                                    Forms\Components\Placeholder::make('menus')
+                                        ->hiddenLabel()
+                                        ->content(function (Get $get): HtmlString {
+                                            $orderMenus = $get('orderMenus') ?? [];
+                                            $menuIds = collect($orderMenus)
+                                                ->pluck('menu_id')
+                                                ->unique()
+                                                ->all();
+
+                                            $menus = Menu::whereIn('id', $menuIds)->get()->keyBy('id');
+                                            $rows = [];
+
+                                            foreach ($orderMenus as $item) {
+                                                $menu = $menus[$item['menu_id']] ?? null;
+                                                $menuName = $menu?->name ?? 'Unknown Menu';
+                                                $variant = $item['variant_beverage'] ? ' (' . VariantBeverage::from($item['variant_beverage'])->name . ')' : '';
+                                                $qty = $item['quantity'];
+                                                $price = Numeric::rupiah(str_replace('.', '', $item['price']));
+                                                $subtotal = Numeric::rupiah($item['subtotal_price']);
+
+                                                $rows[] = "
+                                                {$menuName}{$variant}
+                                                <div class='flex justify-between'>
+                                                    <div>{$qty} @{$price}</div>
+                                                    <div>{$subtotal}</div>
+                                                </div>
+                                            ";
+                                            }
+
+                                            return new HtmlString(implode('<br>', $rows));
+                                        }),
+                                    Forms\Components\Placeholder::make('total')
+                                        ->label('Total')
+                                        ->content(fn(Get $get): HtmlString => new HtmlString(
+                                            '<span class="text-2xl font-semibold">' . OrderResource::calculateTotal($get) . '</span>'
+                                        ))
+                                ])
+                        ])
                 ])->columnSpanFull(),
             ]);
     }
@@ -133,6 +207,23 @@ class ReservationResource extends Resource
                     ->suffix(' Orang')
                     ->numeric()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->getStateUsing(function(Reservation $record): string {
+                        $payments = $record->order->payments;
+
+                        if ($payments->count() == 1) {
+                            if ($payments->first()->amount != $record->order->orderMenus->sum('subtotal_price')) {
+                                return 'DP';
+                            } else {
+                                return $payments->first()->status->label();
+                            }
+                        }
+
+                        // if ('ok') {
+                            return 'belum';
+                        // }
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('location_id')

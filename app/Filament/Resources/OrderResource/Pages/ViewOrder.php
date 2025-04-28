@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\OrderResource\Pages;
 
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\VariantBeverage;
 use App\Filament\Resources\OrderResource;
 use App\Filament\Resources\ReservationResource;
@@ -9,6 +11,7 @@ use App\Helpers\Numeric;
 use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderMenu;
+use App\Models\Payment;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Infolists;
 use Filament\Infolists\Components\TextEntry\TextEntrySize;
@@ -58,6 +61,12 @@ class ViewOrder extends ViewRecord
                                         Infolists\Components\TextEntry::make('user.name')
                                             ->label('Pelanggan')
                                             ->placeholder('-'),
+                                        Infolists\Components\TextEntry::make('table.number')
+                                            ->label('Nomor Meja')
+                                            ->prefix('#')
+                                            ->placeholder('-')
+                                            ->weight(FontWeight::Medium)
+                                            ->size(TextEntrySize::Medium),
                                     ]),
                                 Infolists\Components\Section::make()
                                     ->columnSpan(1)
@@ -82,8 +91,36 @@ class ViewOrder extends ViewRecord
                             ]),
                         Infolists\Components\Tabs\Tab::make('Pembayaran')
                             ->schema([
-                                Infolists\Components\Section::make()
-                                    ->schema([]),
+                                Infolists\Components\RepeatableEntry::make('payments')
+                                    ->hiddenLabel()
+                                    ->columns()
+                                    ->schema([
+                                        Infolists\Components\TextEntry::make('id')
+                                            ->label('ID Pembayaran'),
+                                        Infolists\Components\TextEntry::make('status')
+                                            ->badge()
+                                            ->formatStateUsing(
+                                                fn(PaymentStatus $state): string => $state->label()
+                                            )
+                                            ->url(function(Payment $record): ?string {
+                                                if ($record->status == PaymentStatus::Pending) {
+                                                    return $this->getResource()::getUrl('payment', [
+                                                        'record' => $record->order
+                                                    ]);
+                                                }
+
+                                                return null;
+                                            }),
+                                        Infolists\Components\TextEntry::make('method')
+                                            ->label('Metode Pembayaran')
+                                            ->formatStateUsing(
+                                                fn(PaymentMethod $state): string => $state->label()
+                                            ),
+                                        Infolists\Components\TextEntry::make('amount')
+                                            ->label('Nominal')
+                                            ->prefix('Rp ')
+                                            ->numeric(thousandsSeparator: '.'),
+                                    ])
                             ])
                     ]),
                 Infolists\Components\Section::make('Menu')

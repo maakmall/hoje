@@ -58,4 +58,9 @@ class Order extends Model
     {
         return $this->hasMany(OrderMenu::class);
     }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
 }

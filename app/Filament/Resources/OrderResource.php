@@ -5,12 +5,10 @@ namespace App\Filament\Resources;
 use App\Enums\PaymentMethod;
 use App\Enums\VariantBeverage;
 use App\Filament\Resources\OrderResource\Pages;
-use App\Filament\Resources\OrderResource\RelationManagers;
 use App\Helpers\Numeric;
 use App\Models\Menu;
 use App\Models\MenuPrice;
 use App\Models\Order;
-use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -42,16 +40,13 @@ class OrderResource extends Resource
                             Forms\Components\Group::make([
                                 Forms\Components\Section::make()
                                     ->schema([
-                                        Forms\Components\Select::make('user_id')
-                                            ->relationship('user', 'name', function (Builder $query): void {
-                                                $query->orderBy('name');
-                                            })
-                                            ->label('Pelanggan')
-                                            ->getOptionLabelFromRecordUsing(
-                                                fn(User $record): string => "{$record->id} - {$record->name}"
-                                            )
-                                            ->searchable(['name', 'id'])
-                                            ->preload(),
+                                        Forms\Components\TextInput::make('id')
+                                            ->label('ID Pesanan')
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->afterStateHydrated(function(Set $set): void {
+                                                $set('id', Numeric::generateId('orders'));
+                                            }),
                                     ]),
                             ])->columnSpan(2),
                             Forms\Components\Group::make([
@@ -79,13 +74,9 @@ class OrderResource extends Resource
                             Forms\Components\Section::make()
                                 ->columnSpan(2)
                                 ->schema([
-                                    Forms\Components\Placeholder::make('customer')
-                                        ->label('Pelanggan')
-                                        ->content(function (Get $get): string {
-                                            return $get('user_id')
-                                                ? User::find($get('user_id'))->name
-                                                : '-';
-                                        }),
+                                    Forms\Components\Placeholder::make('id_placeholder')
+                                        ->label('ID Pesanan')
+                                        ->content(fn (Get $get): ?string => $get('id')),
                                     Forms\Components\Radio::make('payment_method')
                                         ->label('Metode Pembayaran')
                                         ->required()
@@ -150,11 +141,6 @@ class OrderResource extends Resource
                     ->numeric()
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Pelanggan')
-                    ->placeholder('-')
-                    ->searchable()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('datetime')
                     ->label('Tanggal')
                     ->dateTime('j M Y H:i')
@@ -176,13 +162,6 @@ class OrderResource extends Resource
                     ->numeric(thousandsSeparator: '.')
                     ->sortable(),
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array

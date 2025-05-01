@@ -22,6 +22,7 @@ class Payment extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'id',
         'order_id',
         'amount',
         'method',
@@ -31,6 +32,20 @@ class Payment extends Model
         'va_number',
         'qr_url',
     ];
+
+    /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
 
     /**
      * Get the attributes that should be cast.

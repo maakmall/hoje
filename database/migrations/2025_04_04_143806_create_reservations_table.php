@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('reservations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable();
+            $table->char('id', 12)->primary();
+            $table->string('customer_name', 100);
             $table->datetime('datetime');
             $table->foreignId('location_id');
             $table->integer('number_of_people');

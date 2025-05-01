@@ -14,16 +14,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('order_id');
+            $table->char('id', 12)->primary();
+            $table->char('order_id', 12);
             $table->unsignedBigInteger('amount');
             $table->enum('method', PaymentMethod::values());
             $table->enum('status', PaymentStatus::values())
                 ->default(PaymentStatus::Pending);
             $table->datetime('datetime');
-            $table->string('transaction_id')->nullable();
-            $table->string('va_number')->nullable();
-            $table->string('qr_url')->nullable();
+            $table->string('transaction_id', 100)->nullable();
+            $table->string('va_number', 50)->nullable();
+            $table->string('qr_url', 100)->nullable();
         });
     }
 

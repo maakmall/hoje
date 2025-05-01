@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('order_menus', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id');
+            $table->char('order_id', 12);
             $table->foreignId('menu_id');
             $table->enum('variant_beverage', VariantBeverage::values())->nullable();
             $table->integer('quantity');

@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('transaction_id', 100)->nullable();
             $table->string('va_number', 50)->nullable();
             $table->string('qr_url', 100)->nullable();
+            $table->string('proof', 100)->nullable();
         });
     }
 

@@ -117,6 +117,10 @@ class ViewOrder extends ViewRecord
                                             ->label('Nominal')
                                             ->prefix('Rp ')
                                             ->numeric(thousandsSeparator: '.'),
+                                        Infolists\Components\ImageEntry::make('proof')
+                                            ->label('Bukti Pembayaran')
+                                            ->placeholder('-')
+                                            ->columnSpanFull(),
                                     ])
                             ])
                     ]),

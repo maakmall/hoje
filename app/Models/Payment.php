@@ -31,6 +31,7 @@ class Payment extends Model
         'transaction_id',
         'va_number',
         'qr_url',
+        'proof',
     ];
 
     /**

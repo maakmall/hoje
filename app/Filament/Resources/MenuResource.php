@@ -140,6 +140,7 @@ class MenuResource extends Resource
                 Tables\Columns\Layout\Stack::make([
                     Tables\Columns\ImageColumn::make('image')
                         ->label('Gambar')
+                        ->defaultImageUrl(url('/images/logo-text.png'))
                         ->height('100%')
                         ->width('100%')
                         ->alignCenter(),

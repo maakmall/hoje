@@ -65,4 +65,12 @@ class Menu extends Model
     {
         return $query->where('category', MenuCategory::Beverage);
     }
+
+    /**
+     * Get the available menu items.
+     */
+    public function scopeAvailable(Builder $query): Builder
+    {
+        return $query->where('availability', true);
+    }
 }

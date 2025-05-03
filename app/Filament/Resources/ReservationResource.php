@@ -256,7 +256,7 @@ class ReservationResource extends Resource
         return [
             Forms\Components\Select::make('menu_id')
                 ->options(
-                    fn(): Collection => Menu::pluck('name', 'id')
+                    fn(): Collection => Menu::available()->pluck('name', 'id')
                 )
                 ->label('Menu')
                 ->searchable()

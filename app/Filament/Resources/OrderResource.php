@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\VariantBeverage;
 use App\Filament\Resources\OrderResource\Pages;
 use App\Helpers\Numeric;
@@ -44,7 +45,7 @@ class OrderResource extends Resource
                                             ->label('ID Pesanan')
                                             ->disabled()
                                             ->dehydrated()
-                                            ->afterStateHydrated(function(Set $set): void {
+                                            ->afterStateHydrated(function (Set $set): void {
                                                 $set('id', Numeric::generateId('orders'));
                                             }),
                                     ]),
@@ -76,7 +77,7 @@ class OrderResource extends Resource
                                 ->schema([
                                     Forms\Components\Placeholder::make('id_placeholder')
                                         ->label('ID Pesanan')
-                                        ->content(fn (Get $get): ?string => $get('id')),
+                                        ->content(fn(Get $get): ?string => $get('id')),
                                     Forms\Components\Radio::make('payment_method')
                                         ->label('Metode Pembayaran')
                                         ->required()
@@ -148,14 +149,24 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn(string $state): string => match($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'Dibayar' => 'success',
                         'Pending' => 'warning',
                         'Gagal' => 'danger',
                     })
-                    ->getStateUsing(
-                        fn(Order $record): string => $record->payments->first()->status->label()
-                    ),
+                    ->getStateUsing(function (Order $record): string {
+                        $total = $record->orderMenus->sum('subtotal_price');
+                        $payment = $record->payments;
+                        $amount = $payment->where('status', PaymentStatus::Paid)->sum('amount');
+
+                        if ($payment->isEmpty()) {
+                            return 'Gagal';
+                        }
+
+                        return $amount !== $total
+                            ? 'Pending'
+                            : 'Dibayar';
+                    }),
                 Tables\Columns\TextColumn::make('order_menus_sum_subtotal_price')
                     ->label('Total')
                     ->prefix('Rp ')

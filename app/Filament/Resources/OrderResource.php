@@ -172,6 +172,63 @@ class OrderResource extends Resource
                     ->prefix('Rp ')
                     ->numeric(thousandsSeparator: '.')
                     ->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\Filter::make('status')
+                    ->form([
+                        Forms\Components\Select::make('status')
+                            ->label('Status')
+                            ->options([
+                                'Dibayar' => 'Dibayar',
+                                'Pending' => 'Pending',
+                                'Gagal' => 'Gagal'
+                            ])
+                            ->placeholder('Semua')
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (!$data['status']) {
+                            return $query;
+                        }
+
+                        $paidStatus = PaymentStatus::Paid;
+
+                        return $query->where(function (Builder $q) use ($data, $paidStatus) {
+                            if ($data['status'] === 'Gagal') {
+                                // Order yang tidak punya payment sama sekali
+                                $q->whereDoesntHave('payments');
+                            }
+
+                            if ($data['status'] === 'Pending') {
+                                $q->whereHas('payments') // Harus punya payment
+                                    ->whereRaw('
+                                    (
+                                        SELECT COALESCE(SUM(amount), 0)
+                                        FROM payments p
+                                        WHERE p.order_id = orders.id AND p.status = ?
+                                    ) <
+                                    (
+                                        SELECT SUM(subtotal_price)
+                                        FROM order_menus om
+                                        WHERE om.order_id = orders.id
+                                    )
+                                    ', [PaymentStatus::Paid]);
+                            }
+
+                            if ($data['status'] === 'Dibayar') {
+                                $q->whereHas('payments', function ($p) use ($paidStatus) {
+                                    $p->selectRaw('order_id, SUM(amount) as paid_amount')
+                                        ->where('status', $paidStatus)
+                                        ->groupBy('order_id');
+                                })->whereRaw('
+                                    (SELECT SUM(CASE WHEN status = ? THEN amount ELSE 0 END)
+                                    FROM payments p WHERE p.order_id = orders.id)
+                                    = 
+                                    (SELECT SUM(subtotal_price)
+                                    FROM order_menus om WHERE om.order_id = orders.id)
+                                ', [$paidStatus]);
+                            }
+                        });
+                    })
             ]);
     }
 

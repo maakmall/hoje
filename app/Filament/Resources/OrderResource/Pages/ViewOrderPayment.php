@@ -5,7 +5,7 @@ namespace App\Filament\Resources\OrderResource\Pages;
 use App\Enums\PaymentStatus;
 use App\Filament\Resources\OrderResource;
 use App\Filament\Resources\ReservationResource;
-use App\Models\Order;
+use App\Models\Payment;
 use Filament\Actions;
 use Filament\Infolists;
 use Filament\Infolists\Components\TextEntry\TextEntrySize;
@@ -20,6 +20,7 @@ class ViewOrderPayment extends ViewRecord
     protected static string $resource = OrderResource::class;
     protected static ?string $title = 'Bayar';
     protected static ?string $breadcrumb = 'Bayar';
+    protected Payment $payment;
 
     protected function getHeaderActions(): array
     {
@@ -39,12 +40,12 @@ class ViewOrderPayment extends ViewRecord
         parent::mount($record);
 
         if (request('pid')) {
-            $payment = $this->record->payments->where('id', request('pid'))->first();
+            $this->payment = $this->record->payments->where('id', request('pid'))->first();
         } else {
-            $payment = $this->record->payments->first();
+            $this->payment = $this->record->payments->first();
         }
 
-        if ($payment->status != PaymentStatus::Pending) {
+        if ($this->payment->status != PaymentStatus::Pending) {
             if (request('redirect') == 'reservation') {
                 $this->redirect(ReservationResource::getUrl('view', [
                     'record' => $this->record->reservation
@@ -68,53 +69,27 @@ class ViewOrderPayment extends ViewRecord
                             ->alignCenter()
                             ->size(TextEntrySize::Large)
                             ->weight(FontWeight::SemiBold)
-                            ->getStateUsing(function (Order $record, Request $request): string {
-                                $payment =  $request->query('pid')
-                                    ? $record->payments->find($request->query('pid'))
-                                    : $record->payments->first();
-
-                                return $payment->method->label();
-                            }),
+                            ->getStateUsing(fn(): string => $this->payment->method->label()),
                         Infolists\Components\TextEntry::make('va_number')
                             ->hiddenLabel()
                             ->alignCenter()
-                            ->visible(function (Order $record, Request $request): bool {
-                                $payment = $request->query('pid')
-                                    ? $record->payments->find($request->query('pid'))
-                                    : $record->payments->first();
-
-                                return (bool) $payment->va_number;
-                            })
+                            ->visible(fn(): bool => (bool) $this->payment->va_number)
                             ->size(TextEntrySize::Large)
                             ->weight(FontWeight::Bold)
-                            ->getStateUsing(function (Order $record, Request $request): ?HtmlString {
-                                $payment = $request->query('pid')
-                                    ? $record->payments->find($request->query('pid'))
-                                    : $record->payments->first();
-
-                                return new HtmlString("
-                                    <span class='text-2xl' style='letter-spacing: 3px;'>VA : $payment->va_number</span>
-                                ");
-                            }),
+                            ->getStateUsing(
+                                fn(): ?HtmlString => new HtmlString("
+                                    <span class='text-2xl' style='letter-spacing: 3px;'>
+                                        VA : {$this->payment->va_number}
+                                    </span>
+                                ")
+                            ),
                         Infolists\Components\ImageEntry::make('qr')
                             ->hiddenLabel()
                             ->width(300)
                             ->height(300)
                             ->alignCenter()
-                            ->visible(function (Order $record, Request $request): bool {
-                                $payment = $request->query('pid')
-                                    ? $record->payments->find($request->query('pid'))
-                                    : $record->payments->first();
-
-                                return (bool) $payment->qr_url;
-                            })
-                            ->getStateUsing(function (Order $record, Request $request): ?string {
-                                $payment = $request->query('pid')
-                                    ? $record->payments->find($request->query('pid'))
-                                    : $record->payments->first();
-
-                                return $payment->qr_url;
-                            }),
+                            ->visible(fn(): bool => (bool) $this->payment->qr_url)
+                            ->getStateUsing(fn(): ?string => $this->payment->qr_url),
                         Infolists\Components\TextEntry::make('payment')
                             ->hiddenLabel()
                             ->prefix('Rp ')
@@ -122,13 +97,7 @@ class ViewOrderPayment extends ViewRecord
                             ->alignCenter()
                             ->size(TextEntrySize::Large)
                             ->weight(FontWeight::SemiBold)
-                            ->getStateUsing(function (Order $record, Request $request): float {
-                                $payment = $request->query('pid')
-                                    ? $record->payments->find($request->query('pid'))
-                                    : $record->payments->first();
-
-                                return $payment->amount;
-                            })
+                            ->getStateUsing(fn(): float => $this->payment->amount)
                     ])
             ]);
     }

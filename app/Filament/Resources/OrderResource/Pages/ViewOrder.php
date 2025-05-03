@@ -58,9 +58,6 @@ class ViewOrder extends ViewRecord
                                         Infolists\Components\TextEntry::make('datetime')
                                             ->label('Tanggal')
                                             ->dateTime('j M Y H:i'),
-                                        Infolists\Components\TextEntry::make('user.name')
-                                            ->label('Pelanggan')
-                                            ->placeholder('-'),
                                         Infolists\Components\TextEntry::make('table.number')
                                             ->label('Nomor Meja')
                                             ->prefix('#')
@@ -120,6 +117,10 @@ class ViewOrder extends ViewRecord
                                             ->label('Nominal')
                                             ->prefix('Rp ')
                                             ->numeric(thousandsSeparator: '.'),
+                                        Infolists\Components\ImageEntry::make('proof')
+                                            ->label('Bukti Pembayaran')
+                                            ->placeholder('-')
+                                            ->columnSpanFull(),
                                     ])
                             ])
                     ]),

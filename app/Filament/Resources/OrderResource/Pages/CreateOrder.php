@@ -6,6 +6,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Model;
 use App\Filament\Resources\OrderResource;
+use App\Helpers\Numeric;
 use App\Services\Midtrans;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
@@ -14,10 +15,14 @@ class CreateOrder extends CreateRecord
 {
     protected static string $resource = OrderResource::class;
     protected static bool $canCreateAnother = false;
+    protected ?string $paymentId;
 
     protected function getRedirectUrl(): string
     {
-        return $this->getResource()::getUrl('payment', ['record' => $this->getRecord()]);
+        return $this->getResource()::getUrl('payment', [
+            'record' => $this->getRecord(),
+            'pid' => $this->paymentId
+        ]);
     }
 
     protected function handleRecordCreation(array $data): Model
@@ -35,6 +40,7 @@ class CreateOrder extends CreateRecord
             $amount = $order->orderMenus->sum('subtotal_price');
     
             $payment = [
+                'id' => Numeric::generateId('payments'),
                 'datetime' => $order->datetime,
                 'amount' => $amount,
                 'method' => $paymentMethod,
@@ -67,7 +73,7 @@ class CreateOrder extends CreateRecord
                 $payment['qr_url'] = $response->actions[0]->url ?? null;
             }
     
-            $order->payments()->create($payment);
+            $this->paymentId = $order->payments()->create($payment)->id;
     
             return $order;
         });

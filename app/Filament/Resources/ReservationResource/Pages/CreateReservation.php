@@ -9,17 +9,20 @@ use Illuminate\Support\Facades\DB;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Filament\Resources\OrderResource;
+use App\Helpers\Numeric;
 use App\Services\Midtrans;
 
 class CreateReservation extends CreateRecord
 {
     protected static string $resource = ReservationResource::class;
+    protected string $paymentId;
 
     protected function getRedirectUrl(): string
     {
         return OrderResource::getUrl('payment', [
             'record' => $this->getRecord()->order->id,
-            'redirect' => 'reservation'
+            'redirect' => 'reservation',
+            'pid' => $this->paymentId,
         ]);
     }
 
@@ -30,22 +33,26 @@ class CreateReservation extends CreateRecord
             $paymentMethod = PaymentMethod::from($data['payment_method']);
             
             unset($data['orderMenus']);
+
+            $data['id'] = Numeric::generateId('reservations');
     
             $reservation = static::getModel()::create($data);
             $order = $reservation->order()->create([
-                'user_id' => $data['user_id'],
+                'id' => Numeric::generateId('orders'),
                 'datetime' => $data['datetime'],
             ]);
     
             $order->orderMenus()->createMany($orderMenus);
 
             $amount = $order->orderMenus->sum('subtotal_price');
+            $amount -= $amount * 50 / 100;
 
-            if ($data['payment_type'] == 'dp') {
-                $amount -= $amount * 50 / 100;
-            }
+            // if ($data['payment_type'] == 'dp') {
+            //     $amount -= $amount * 50 / 100;
+            // }
     
             $payment = [
+                'id' => Numeric::generateId('payments'),
                 'datetime' => $order->datetime,
                 'amount' => $amount,
                 'method' => $paymentMethod,
@@ -78,7 +85,7 @@ class CreateReservation extends CreateRecord
                 $payment['qr_url'] = $response->actions[0]->url ?? null;
             }
     
-            $order->payments()->create($payment);
+            $this->paymentId = $order->payments()->create($payment)->id;
     
             return $reservation;
         });

@@ -21,19 +21,25 @@ class Order extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'user_id',
+        'id',
         'reservation_id',
         'table_id',
         'datetime',
     ];
 
     /**
-     * The user that made the reservation.
+     * The "type" of the primary key ID.
+     *
+     * @var string
      */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
+    protected $keyType = 'string';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
 
     /**
      * The reservation that the order is for.
@@ -59,6 +65,9 @@ class Order extends Model
         return $this->hasMany(OrderMenu::class);
     }
 
+    /**
+     * The payment associated with the order
+     */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);

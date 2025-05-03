@@ -12,9 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable();
-            $table->foreignId('reservation_id')->nullable();
+            $table->char('id', 12);
+            $table->char('reservation_id', 12)->nullable();
             $table->foreignId('table_id')->nullable();
             $table->datetime('datetime');
         });

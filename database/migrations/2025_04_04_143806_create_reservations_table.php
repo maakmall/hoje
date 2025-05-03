@@ -15,7 +15,7 @@ return new class extends Migration
             $table->char('id', 12)->primary();
             $table->string('customer_name', 100);
             $table->datetime('datetime');
-            $table->foreignId('location_id');
+            $table->foreignId('location_id')->constrained();
             $table->integer('number_of_people');
             $table->text('notes')->nullable();
         });

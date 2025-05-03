@@ -14,7 +14,9 @@ return new class extends Migration
     {
         Schema::create('menu_prices', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('menu_id');
+            $table->foreignId('menu_id')
+                ->constrained()
+                ->cascadeOnDelete();
             $table->enum('variant_beverage', VariantBeverage::values())->nullable();
             $table->integer('price');
         });

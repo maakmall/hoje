@@ -15,10 +15,15 @@ return new class extends Migration
         Schema::create('order_menus', function (Blueprint $table) {
             $table->id();
             $table->char('order_id', 12);
-            $table->foreignId('menu_id');
+            $table->foreignId('menu_id')->constrained();
             $table->enum('variant_beverage', VariantBeverage::values())->nullable();
             $table->integer('quantity');
             $table->integer('subtotal_price');
+
+            $table->foreign('order_id')
+                ->references('id')
+                ->on('orders')
+                ->cascadeOnDelete();
         });
     }
 

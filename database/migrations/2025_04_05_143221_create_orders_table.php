@@ -12,10 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->char('id', 12);
+            $table->char('id', 12)->primary();
             $table->char('reservation_id', 12)->nullable();
-            $table->foreignId('table_id')->nullable();
+            $table->foreignId('table_id')->nullable()->constrained();
             $table->datetime('datetime');
+
+            $table->foreign('reservation_id')
+                ->references('id')
+                ->on('reservations')
+                ->cascadeOnDelete();
         });
     }
 

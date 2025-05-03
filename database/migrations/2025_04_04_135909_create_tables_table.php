@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('tables', function (Blueprint $table) {
             $table->id();
             $table->integer('number');
-            $table->foreignId('location_id');
+            $table->foreignId('location_id')->constrained();
         });
     }
 

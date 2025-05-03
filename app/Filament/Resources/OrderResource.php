@@ -185,6 +185,9 @@ class OrderResource extends Resource
                             ])
                             ->placeholder('Semua')
                     ])
+                    ->indicateUsing(function (array $data): ?string {
+                        return $data['status'] ? 'Status: ' . $data['status'] : null;
+                    })
                     ->query(function (Builder $query, array $data): Builder {
                         if (!$data['status']) {
                             return $query;

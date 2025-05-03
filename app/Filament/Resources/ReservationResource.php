@@ -10,7 +10,6 @@ use App\Helpers\Numeric;
 use App\Models\Menu;
 use App\Models\MenuPrice;
 use App\Models\Reservation;
-use App\Models\User;
 use App\Rules\ReservationCapacity;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -20,6 +19,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\HtmlString;
 
@@ -216,21 +216,92 @@ class ReservationResource extends Resource
                     }),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('location_id')
-                    ->relationship('location', 'name')
-                    ->label('Lokasi'),
                 Tables\Filters\Filter::make('datetime')
                     ->label('Tanggal')
                     ->form([
                         Forms\Components\DatePicker::make('date')
                             ->label('Tanggal'),
                     ])
+                    ->indicateUsing(function (array $data): ?string {
+                        if (!filled($data['date'])) {
+                            return null;
+                        }
+
+                        $date = Carbon::parse($data['date'])->translatedFormat('j M Y');
+
+                        return $data['date'] ? 'Tanggal: ' . $date : null;
+                    })
                     ->query(function (Builder $query, array $data): Builder {
                         $query->when($data['date'], function (Builder $query) use ($data) {
                             $query->whereDate('datetime', $data['date']);
                         });
 
                         return $query;
+                    }),
+                Tables\Filters\Filter::make('status')
+                    ->form([
+                        Forms\Components\Select::make('status')
+                            ->options([
+                                'DP' => 'DP',
+                                'Dibayar' => 'Dibayar',
+                                'Belum Bayar' => 'Belum Bayar',
+                            ]),
+                    ])
+                    ->indicateUsing(function (array $data): ?string {
+                        return $data['status'] ? 'Status: ' . $data['status'] : null;
+                    })
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (!filled($data['status'])) {
+                            return $query;
+                        }
+
+                        return $query->whereHas('order', function ($orderQuery) use ($data) {
+                            $status = $data['status'];
+
+                            return $orderQuery->whereRaw(match ($status) {
+                                'Belum Bayar' => '
+                                    (
+                                        SELECT COALESCE(SUM(amount), 0)
+                                        FROM payments
+                                        WHERE payments.order_id = orders.id
+                                        AND payments.status = ?
+                                    ) = 0
+                                ',
+                                'DP' => '
+                                    (
+                                        SELECT COALESCE(SUM(amount), 0)
+                                        FROM payments
+                                        WHERE payments.order_id = orders.id
+                                        AND payments.status = ?
+                                    ) < (
+                                        SELECT SUM(subtotal_price)
+                                        FROM order_menus
+                                        WHERE order_menus.order_id = orders.id
+                                    )
+                                    AND (
+                                        SELECT COALESCE(SUM(amount), 0)
+                                        FROM payments
+                                        WHERE payments.order_id = orders.id
+                                        AND payments.status = ?
+                                    ) > 0
+                                ',
+                                'Dibayar' => '
+                                    (
+                                        SELECT COALESCE(SUM(amount), 0)
+                                        FROM payments
+                                        WHERE payments.order_id = orders.id
+                                        AND payments.status = ?
+                                    ) = (
+                                        SELECT SUM(subtotal_price)
+                                        FROM order_menus
+                                        WHERE order_menus.order_id = orders.id
+                                    )
+                                ',
+                            }, match ($status) {
+                                'DP' => [PaymentStatus::Paid, PaymentStatus::Paid],
+                                default => [PaymentStatus::Paid],
+                            });
+                        });
                     }),
             ]);
     }

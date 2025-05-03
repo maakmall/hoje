@@ -22,12 +22,27 @@ class Reservation extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'user_id',
+        'id',
+        'customer_name',
         'datetime',
         'location_id',
         'number_of_people',
         'notes',
     ];
+
+    /**
+     * The "type" of the primary key ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
 
     /**
      * Get the attributes that should be cast.
@@ -39,14 +54,6 @@ class Reservation extends Model
         return [
             'datetime' => 'datetime',
         ];
-    }
-
-    /**
-     * The user that made the reservation.
-     */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 
     /**

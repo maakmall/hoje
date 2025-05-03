@@ -32,7 +32,9 @@ class ViewReservation extends ViewRecord
                 ->label('Selesaikan Pembayaran')
                 ->visible(function (Reservation $record): bool {
                     $total = $record->order->orderMenus->sum('subtotal_price');
-                    $amount = $record->order->payments->first()->amount;
+                    $amount = $record->order->payments
+                        ->where('status', PaymentStatus::Paid)
+                        ->sum('amount');
 
                     return $amount !== $total;
                 })
@@ -40,12 +42,20 @@ class ViewReservation extends ViewRecord
                 ->form([
                     Forms\Components\Placeholder::make('total')
                         ->inlineLabel()
-                        ->content(function(Reservation $record): HtmlString {
-                            $amount = $record->order->payments->first()->amount;
+                        ->content(function (Reservation $record): HtmlString {
+                            $amount = $record->order->payments
+                                ->where('status', PaymentStatus::Paid)
+                                ->sum('amount');
+
+                            if ($amount == 0) {
+                                $amount = $record->order->orderMenus->sum('subtotal_price');
+                            } else {
+                                $amount = $record->order->orderMenus->sum('subtotal_price') - $amount;
+                            }
 
                             return new HtmlString("<span class='text-lg font-semibold'>" .
                                 Numeric::rupiah($amount, true)
-                            . "</span>");
+                                . "</span>");
                         }),
                     Forms\Components\Radio::make('payment_method')
                         ->label('Metode Pembayaran')
@@ -58,20 +68,29 @@ class ViewReservation extends ViewRecord
                 ->modalSubmitActionLabel('Bayar')
                 ->action(function (Reservation $record, array $data): void {
                     $paymentMethod = PaymentMethod::from($data['payment_method']);
-                    $amount = $record->order->payments->first()->amount;
+                    $amount = $record->order->payments
+                        ->where('status', PaymentStatus::Paid)
+                        ->sum('amount');
+
+                    if ($amount == 0) {
+                        $amount = $record->order->orderMenus->sum('subtotal_price');
+                    } else {
+                        $amount = $record->order->orderMenus->sum('subtotal_price') - $amount;
+                    }
 
                     $payment = [
+                        'id' => Numeric::generateId('payments'),
                         'datetime' => $record->order->datetime,
                         'amount' => $amount,
                         'method' => $paymentMethod,
                         'status' => PaymentStatus::Pending,
                     ];
-            
+
                     if ($paymentMethod === PaymentMethod::Cash) {
                         $payment['status'] = PaymentStatus::Paid;
                     } else {
                         $midtrans = new Midtrans();
-            
+
                         $payload = [
                             'payment_type' => $paymentMethod === PaymentMethod::Qris ? 'gopay' : 'bank_transfer',
                             'transaction_details' => [
@@ -79,20 +98,20 @@ class ViewReservation extends ViewRecord
                                 'gross_amount' => $amount,
                             ],
                         ];
-            
+
                         if ($paymentMethod === PaymentMethod::Transfer) {
                             $payload['bank_transfer'] = [
                                 'bank' => 'bca',
                             ];
                         }
-            
+
                         $response = $midtrans->createTransaction($payload);
-            
+
                         $payment['transaction_id'] = $response->transaction_id ?? null;
                         $payment['va_number'] = $response->va_numbers[0]->va_number ?? null;
                         $payment['qr_url'] = $response->actions[0]->url ?? null;
                     }
-            
+
                     $payment = $record->order->payments()->create($payment);
 
                     $this->redirect(OrderResource::getUrl('payment', [
@@ -127,10 +146,25 @@ class ViewReservation extends ViewRecord
                                     ->columns()
                                     ->columnSpan(2)
                                     ->schema([
-                                        Infolists\Components\TextEntry::make('user.name')
-                                            ->label('Pelanggan')
-                                            ->placeholder('-')
-                                            ->columnSpanFull(),
+                                        Infolists\Components\TextEntry::make('customer_name')
+                                            ->label('Pelanggan'),
+                                        Infolists\Components\TextEntry::make('status')
+                                            ->hiddenLabel()
+                                            ->badge()
+                                            ->getStateUsing(function (Reservation $record): string {
+                                                $total = $record->order->orderMenus->sum('subtotal_price');
+                                                $amount = $record->order->payments
+                                                    ->where('status', PaymentStatus::Paid)
+                                                    ->sum('amount');
+
+                                                if ($amount == 0) {
+                                                    return 'Belum Bayar';
+                                                }
+
+                                                return $amount !== $total
+                                                    ? 'DP'
+                                                    : 'Dibayar';
+                                            }),
                                         Infolists\Components\TextEntry::make('location.name')
                                             ->label('Lokasi'),
                                         Infolists\Components\TextEntry::make('number_of_people')

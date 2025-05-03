@@ -177,11 +177,14 @@ class OrderResource extends Resource
     /**
      * Calculate total price from orderMenus
      */
-    public static function calculateTotal(Get $get): string
+    public static function calculateTotal(Get $get, bool $isDownPayment = false): string
     {
         $total = collect($get('orderMenus'))->sum('subtotal_price');
 
-        if ($get('payment_type') == 'dp') {
+        // if ($get('payment_type') == 'dp') {
+        //     $total -= $total * 50 / 100;
+        // }
+        if ($isDownPayment) {
             $total -= $total * 50 / 100;
         }
 

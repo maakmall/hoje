@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Enums\VariantBeverage;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Filament\Resources\ReservationResource\Pages;
 use App\Helpers\Numeric;
 use App\Models\Menu;
@@ -43,17 +44,10 @@ class ReservationResource extends Resource
                                 Forms\Components\Section::make()
                                     ->columns()
                                     ->schema([
-                                        Forms\Components\Select::make('user_id')
-                                            ->label('Pelanggan')
-                                            ->relationship('user', 'name', function (Builder $query): void {
-                                                $query->orderBy('name');
-                                            })
-                                            ->columnSpanFull()
-                                            ->getOptionLabelFromRecordUsing(
-                                                fn(User $record): string => "{$record->id} - {$record->name}"
-                                            )
-                                            ->searchable(['name', 'id'])
-                                            ->preload(),
+                                        Forms\Components\TextInput::make('customer_name')
+                                            ->label('Nama Pelanggan')
+                                            ->required()
+                                            ->columnSpanFull(),
                                         Forms\Components\Select::make('location_id')
                                             ->label('Lokasi')
                                             ->relationship('location', 'name')
@@ -114,31 +108,30 @@ class ReservationResource extends Resource
                                 ->schema([
                                     Forms\Components\Placeholder::make('customer')
                                         ->label('Pelanggan')
-                                        ->content(function (Get $get): string {
-                                            return $get('user_id')
-                                                ? User::find($get('user_id'))->name
-                                                : '-';
-                                        }),
+                                        ->content(fn(Get $get): ?string => $get('customer_name')),
                                     Forms\Components\Radio::make('payment_method')
                                         ->label('Metode Pembayaran')
                                         ->required()
                                         ->options(PaymentMethod::select())
                                         ->inline()
                                         ->inlineLabel(false),
-                                    Forms\Components\Radio::make('payment_type')
-                                        ->label('Jenis Pembayaran')
-                                        ->required()
-                                        ->options([
-                                            'dp' => 'DP 50%',
-                                            'full' => 'Bayar Penuh',
-                                        ])
-                                        ->inline()
-                                        ->live()
-                                        ->default('full')
-                                        ->inlineLabel(false)
-                                        ->afterStateUpdated(function(Get $get): void {
-                                            OrderResource::calculateTotal($get);
-                                        })
+                                    Forms\Components\Placeholder::make('note')
+                                        ->label('Catatan')
+                                        ->content('Jumlah tertera adalah DP 50% dari total harga'),
+                                    // Forms\Components\Radio::make('payment_type')
+                                    //     ->label('Jenis Pembayaran')
+                                    //     ->required()
+                                    //     ->options([
+                                    //         'dp' => 'DP 50%',
+                                    //         'full' => 'Bayar Penuh',
+                                    //     ])
+                                    //     ->inline()
+                                    //     ->live()
+                                    //     ->default('full')
+                                    //     ->inlineLabel(false)
+                                    //     ->afterStateUpdated(function (Get $get): void {
+                                    //         OrderResource::calculateTotal($get);
+                                    //     })
                                 ]),
                             Forms\Components\Section::make()
                                 ->columnSpan(1)
@@ -177,7 +170,7 @@ class ReservationResource extends Resource
                                     Forms\Components\Placeholder::make('total')
                                         ->label('Total')
                                         ->content(fn(Get $get): HtmlString => new HtmlString(
-                                            '<span class="text-2xl font-semibold">' . OrderResource::calculateTotal($get) . '</span>'
+                                            '<span class="text-2xl font-semibold">' . OrderResource::calculateTotal($get, true) . '</span>'
                                         ))
                                 ])
                         ])
@@ -192,7 +185,7 @@ class ReservationResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('user.name')
+                Tables\Columns\TextColumn::make('customer_name')
                     ->label('Pelanggan')
                     ->placeholder('-')
                     ->searchable(),
@@ -200,8 +193,6 @@ class ReservationResource extends Resource
                     ->label('Tanggal')
                     ->dateTime('j M Y H:i')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('location.name')
-                    ->label('Lokasi'),
                 Tables\Columns\TextColumn::make('number_of_people')
                     ->label('Jumlah Orang')
                     ->suffix(' Orang')
@@ -209,20 +200,19 @@ class ReservationResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->getStateUsing(function(Reservation $record): string {
-                        $payments = $record->order->payments;
+                    ->getStateUsing(function (Reservation $record): string {
+                        $total = $record->order->orderMenus->sum('subtotal_price');
+                        $amount = $record->order->payments
+                            ->where('status', PaymentStatus::Paid)
+                            ->sum('amount');
 
-                        if ($payments->count() == 1) {
-                            if ($payments->first()->amount != $record->order->orderMenus->sum('subtotal_price')) {
-                                return 'DP';
-                            } else {
-                                return $payments->first()->status->label();
-                            }
+                        if ($amount == 0) {
+                            return 'Belum Bayar';
                         }
 
-                        // if ('ok') {
-                            return 'belum';
-                        // }
+                        return $amount !== $total
+                            ? 'DP'
+                            : 'Dibayar';
                     }),
             ])
             ->filters([

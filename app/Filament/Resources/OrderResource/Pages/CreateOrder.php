@@ -66,7 +66,7 @@ class CreateOrder extends CreateRecord
                     ];
                 }
     
-                // $response = $midtrans->createTransaction($payload);
+                $response = $midtrans->createTransaction($payload);
     
                 $payment['transaction_id'] = $response->transaction_id ?? null;
                 $payment['va_number'] = $response->va_numbers[0]->va_number ?? null;

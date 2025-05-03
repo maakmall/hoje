@@ -181,6 +181,9 @@ class ReservationResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->recordUrl(
+                fn(Reservation $record): string => ReservationResource::getUrl('view', ['record' => $record])
+            )
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
@@ -222,6 +225,14 @@ class ReservationResource extends Resource
                         return $record->order->payments
                             ->where('status', PaymentStatus::Paid)
                             ->sum('amount') === 0;
+                    }),
+                Tables\Actions\EditAction::make()
+                    ->iconButton()
+                    ->visible(function(Reservation $record): bool {
+                        $total = $record->order->orderMenus->sum('subtotal_price');
+                        return $record->order->payments
+                            ->where('status', PaymentStatus::Paid)
+                            ->sum('amount') !== $total;
                     })
             ])
             ->filters([
@@ -328,6 +339,7 @@ class ReservationResource extends Resource
             'index' => Pages\ListReservations::route('/'),
             'create' => Pages\CreateReservation::route('/create'),
             'view' => Pages\ViewReservation::route('/{record}'),
+            'edit' => Pages\EditReservation::route('/{record}/edit'),
         ];
     }
 

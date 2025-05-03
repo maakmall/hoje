@@ -215,6 +215,15 @@ class ReservationResource extends Resource
                             : 'Dibayar';
                     }),
             ])
+            ->actions([
+                Tables\Actions\DeleteAction::make()
+                    ->iconButton()
+                    ->visible(function(Reservation $record): bool {
+                        return $record->order->payments
+                            ->where('status', PaymentStatus::Paid)
+                            ->sum('amount') === 0;
+                    })
+            ])
             ->filters([
                 Tables\Filters\Filter::make('datetime')
                     ->label('Tanggal')

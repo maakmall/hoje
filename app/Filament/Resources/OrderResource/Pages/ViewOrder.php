@@ -120,6 +120,7 @@ class ViewOrder extends ViewRecord
                                         Infolists\Components\ImageEntry::make('proof')
                                             ->label('Bukti Pembayaran')
                                             ->placeholder('-')
+                                            ->disk('r2')
                                             ->columnSpanFull(),
                                     ])
                             ])

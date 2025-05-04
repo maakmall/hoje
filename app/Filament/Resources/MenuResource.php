@@ -68,6 +68,7 @@ class MenuResource extends Resource
                             Forms\Components\FileUpload::make('image')
                                 ->label('Gambar')
                                 ->image()
+                                ->disk('r2')
                                 ->required()
                                 ->columnSpanFull(),
                         ]),
@@ -140,6 +141,7 @@ class MenuResource extends Resource
                 Tables\Columns\Layout\Stack::make([
                     Tables\Columns\ImageColumn::make('image')
                         ->label('Gambar')
+                        ->disk('r2')
                         ->defaultImageUrl(url('/images/logo-text.png'))
                         ->height('100%')
                         ->width('100%')

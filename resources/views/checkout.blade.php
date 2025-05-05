@@ -23,6 +23,7 @@
                             <h2 style="margin-top: 10px; margin-bottom: 20px;">Total</h2>
                             <h3 style="margin-top: 10px; margin-bottom: 20px;" id="totalAmount"></h3>
 
+                            <div class="form-group" style="margin-bottom: 5px;" id="tableNumberGroup"></div>
                             <div class="form-group">
                                 <label for="paymentMethod" class="control-label">
                                     Payment Method
@@ -185,10 +186,23 @@
             $('#copySuccess').fadeIn(200).delay(1000).fadeOut(200)
         })
 
+        function setTableNumber() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tableNumber = urlParams.get('table');
+            if (!tableNumber) return
+
+            $('#tableNumberGroup').html(`
+                <label for="name" class="control-label">
+                    No. Meja
+                </label>
+                <p id="tableNumber" style="margin-bottom: 0;">#${tableNumber}</p>
+            `)
+        }
 
         $(document).ready(function() {
             loadCart()
             updateTotalAmount()
+            setTableNumber()
         })
     </script>
 @endpush

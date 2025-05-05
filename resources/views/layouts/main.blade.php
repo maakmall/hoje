@@ -193,6 +193,13 @@
     <script>
         $(function() {
             $('#date').datetimepicker();
+
+            const urlParams = new URLSearchParams(window.location.search)
+            const table = urlParams.get('table')
+
+            if (table) {
+                $('.checkout a').attr('href', `/checkout?table=${table}`)
+            }
         });
     </script>
     <!-- Main JS -->

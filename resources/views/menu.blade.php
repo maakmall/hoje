@@ -70,7 +70,12 @@
     </div>
 @endsection
 
+@push('styles')
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+@endpush
+
 @push('scripts')
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
         const cartKey = 'hoje_cart'
 
@@ -124,6 +129,15 @@
 
                 $('#menuModal').modal('hide')
                 updateCartCount()
+
+                Toastify({
+                    text: "Added to cart",
+                    position: "center",
+                    style: {
+                        background: "linear-gradient(to right, #00b09b, #96c93d)"
+                    },
+                    duration: 3000
+                }).showToast();
             })
         })
 

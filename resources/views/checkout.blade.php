@@ -47,7 +47,12 @@
     </div>
 @endsection
 
+@push('styles')
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+@endpush
+
 @push('scripts')
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <script>
         const cartKey = 'hoje_cart'
 
@@ -125,50 +130,153 @@
             $('#totalAmount').text(`Rp. ${formatRupiah(total)}`)
         }
 
-        $('#pay').click(function() {
+        $('#pay').click(async function() {
+            $(this).attr('disabled', true).text('Processing...')
             const paymentMethod = $('#paymentMethod').val()
+            const table = new URLSearchParams(window.location.search).get('table')
+            const cart = JSON.parse(localStorage.getItem('hoje_cart') || '[]')
 
-            if (!paymentMethod) {
-                alert('Please select a payment method')
+            if (!paymentMethod || cart.length === 0) {
+                Toastify({
+                    text: "Payment method & cart must be filled!",
+                    position: "center",
+                    style: {
+                        background: "linear-gradient(to right, #FF5F6D, #FFC371)",
+                    },
+                    duration: 3000
+                }).showToast();
+
+                $(this).attr('disabled', false).text('Pay')
+
                 return
             }
 
-            // Hide select dropdown & show text label
-            $('#paymentMethod').hide()
-            $('#paymentMethodName')
-                .show()
-                .text(paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1))
-
-            // Ganti konten #payment sesuai metode
-            if (paymentMethod === 'qris') {
-                $('#payment').html(`
-                    <div class="text-center">
-                        <p style="margin: 0;">Scan QRIS to make payment</p>
-                        <img src="https://api.sandbox.midtrans.com/v2/gopay/8824517e-4fa7-4731-a213-80ce823836e6/qr-code" width="100%">
-                    </div>
-                `)
-            } else if (paymentMethod === 'transfer') {
-                $('#payment').html(`
-                    <div>
-                        <p style="margin-bottom: 20px;">Please transfer to the following virtual account number:</p>
-                        <div class="text-center" style="margin: 10px 0;">
-                            <h4 style="display: inline;" id="vaNumber">1234567890</h4>
-                            <button id="copyVaBtn" style="border: none; background: none; cursor: pointer; margin-left: 5px;">
-                                <i class="icon-copy"></i>
-                            </button>
-                        </div>
-                        <small id="copySuccess" style="display: none; color: green; text-align: center;">Copied!</small>
-                    </div>
-                `)
+            const payload = {
+                _token: '{{ csrf_token() }}',
+                table,
+                payment_method: paymentMethod,
+                items: cart.map(item => ({
+                    menu_id: item.menu_id,
+                    qty: item.qty,
+                    variant: item.variant
+                }))
             }
 
-            // Sembunyiin tombol dan ganti dengan input file buat upload bukti pembayaran
-            $('#pay').hide().after(`
-                <div class="form-group" style="margin-top: 15px;">
-                    <label for="paymentProof">Upload Proof Payment</label>
-                    <input type="file" class="form-control" id="paymentProof" name="payment_proof" accept="image/*">
-                </div>
-            `)
+            try {
+                const res = await $.ajax({
+                    url: '/orders',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(payload)
+                })
+
+                const payment = res.payment
+                
+                localStorage.setItem('hoje_order', JSON.stringify({
+                    order_id: res.order_id,
+                    payment_method: paymentMethod,
+                    payment: payment
+                }))
+
+                // Hide select dropdown & show text label
+                $('#paymentMethod').hide()
+                $('#paymentMethodName')
+                    .show()
+                    .text(paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1))
+
+                // Ganti konten #payment sesuai metode
+                if (paymentMethod === 'qris') {
+                    $('#payment').html(`
+                        <div class="text-center">
+                            <p style="margin: 0;">Scan QRIS to make payment</p>
+                            <img src="${payment.qr_url}" width="100%">
+                        </div>
+                    `)
+                } else if (paymentMethod === 'transfer') {
+                    $('#payment').html(`
+                        <div>
+                            <p style="margin-bottom: 20px;">Please transfer to the following virtual account number:</p>
+                            <div class="text-center" style="margin: 10px 0;">
+                                <h4 style="display: inline;" id="vaNumber">${payment.va_number}</h4>
+                                <button id="copyVaBtn" style="border: none; background: none; cursor: pointer; margin-left: 5px;">
+                                    <i class="icon-copy"></i>
+                                </button>
+                            </div>
+                            <small id="copySuccess" style="display: none; color: green; text-align: center;">Copied!</small>
+                        </div>
+                    `)
+                }
+
+                // Sembunyiin tombol dan ganti dengan input file buat upload bukti pembayaran
+                $('#pay').hide().after(`
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <input type="hidden" name="order_id" value="${res.order_id}">
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label for="paymentProof">Upload Bukti Bayar</label>
+                            <input type="file" class="form-control" name="payment_proof" accept="image/*" required>
+                            <button type="submit" class="btn btn-success btn-block" style="margin-top:10px;">Upload</button>
+                        </div>
+                    </form>
+                `)
+            } catch (error) {
+                $(this).attr('disabled', false).text('Pay')
+
+                Toastify({
+                    text: "Failed to create order!",
+                    position: "center",
+                    style: {
+                        background: "linear-gradient(to right, #FF5F6D, #FFC371)",
+                    },
+                    duration: 3000
+                }).showToast();
+
+                console.error(error)
+            }
+        })
+
+        // Upload bukti bayar
+        $(document).on('submit', '#uploadForm', function(e) {
+            e.preventDefault()
+            $('#uploadForm button[type="submit"]').attr('disabled', true).text('Uploading...')
+
+            const formData = new FormData(this)
+            formData.set('_token', '{{ csrf_token() }}')
+
+            $.ajax({
+                url: '/orders/upload-proof',
+                method: 'POST',
+                processData: false,
+                contentType: false,
+                data: formData,
+                success: () => {
+                    Toastify({
+                        text: "Payment proof uploaded successfully!",
+                        position: "center",
+                        style: {
+                            background: "linear-gradient(to right, #FF5F6D, #FFC371)",
+                        },
+                        duration: 3000
+                    }).showToast();
+
+                    // Kosongin cart dan data order
+                    localStorage.removeItem(cartKey)
+                    localStorage.removeItem('hoje_order')
+
+                    $(this).remove()
+                },
+                error: () => {
+                    Toastify({
+                        text: "Failed to upload payment proof!",
+                        position: "center",
+                        style: {
+                            background: "linear-gradient(to right, #FF5F6D, #FFC371)",
+                        },
+                        duration: 3000
+                    }).showToast();
+
+                    $('#uploadForm button[type="submit"]').attr('disabled', false).text('Upload')
+                }
+            })
         })
 
         // Delegate karena elemen baru muncul setelah klik "Pay"
@@ -200,6 +308,54 @@
         }
 
         $(document).ready(function() {
+            const savedOrder = JSON.parse(localStorage.getItem('hoje_order'))
+
+            if (savedOrder) {
+                const {
+                    order_id,
+                    payment_method,
+                    payment
+                } = savedOrder
+
+                $('#paymentMethod').hide()
+                $('#paymentMethodName')
+                    .show()
+                    .text(payment_method.charAt(0).toUpperCase() + payment_method.slice(1))
+
+                if (payment_method === 'qris') {
+                    $('#payment').html(`
+                        <div class="text-center">
+                            <p style="margin: 0;">Scan QRIS to make payment</p>
+                            <img src="${payment.qr_url}" width="100%">
+                        </div>
+                    `)
+                } else if (payment_method === 'transfer') {
+                    $('#payment').html(`
+                        <div>
+                            <p style="margin-bottom: 20px;">Please transfer to the following virtual account number:</p>
+                            <div class="text-center" style="margin: 10px 0;">
+                                <h4 style="display: inline;" id="vaNumber">${payment.va_number}</h4>
+                                <button id="copyVaBtn" style="border: none; background: none; cursor: pointer; margin-left: 5px;">
+                                    <i class="icon-copy"></i>
+                                </button>
+                            </div>
+                            <small id="copySuccess" style="display: none; color: green; text-align: center;">Copied!</small>
+                        </div>
+                    `)
+                }
+
+                $('#pay').hide().after(`
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <input type="hidden" name="order_id" value="${order_id}">
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label for="paymentProof">Upload Bukti Bayar</label>
+                            <input type="file" class="form-control" name="payment_proof" accept="image/*" required>
+                            <button type="submit" class="btn btn-success btn-block" style="margin-top:10px;">Upload</button>
+                        </div>
+                    </form>
+                `)
+            }
+
             loadCart()
             updateTotalAmount()
             setTableNumber()

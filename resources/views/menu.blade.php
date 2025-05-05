@@ -81,9 +81,23 @@
 
         function addToCart(item) {
             let cart = JSON.parse(localStorage.getItem(cartKey) || '[]')
-            cart.push(item)
+
+            const existingIndex = cart.findIndex(cartItem =>
+                cartItem.menu_id == item.menu_id && cartItem.variant == item.variant
+            )
+
+            if (existingIndex !== -1) {
+                // Kalo udah ada, update qty & subtotal
+                cart[existingIndex].qty += item.qty
+                cart[existingIndex].subtotal_price = cart[existingIndex].qty * cart[existingIndex].price
+            } else {
+                // Kalo belum ada, push item baru
+                cart.push(item)
+            }
+
             localStorage.setItem(cartKey, JSON.stringify(cart))
         }
+
 
         $(document).ready(function() {
             updateCartCount()

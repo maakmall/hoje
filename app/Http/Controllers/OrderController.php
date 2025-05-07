@@ -8,9 +8,11 @@ use App\Helpers\Numeric;
 use App\Models\Menu;
 use App\Models\MenuPrice;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Table;
 use App\Services\Midtrans;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
@@ -162,5 +164,55 @@ class OrderController extends Controller
         $latestPayment->update(['proof' => $path]);
 
         return response()->json(['message' => 'Payment proof uploaded successfully']);
+    }
+
+    public function payment(Request $request): Response
+    {
+        $serverKey = config('midtrans.server_key');
+        $signatureKey = $request->input('signature_key');
+        $orderId = $request->input('order_id');
+        $transactionId = $request->input('transaction_id');
+        $statusCode = $request->input('status_code');
+        $grossAmount = $request->input('gross_amount');
+
+        // Generate signature untuk verifikasi
+        $expectedSignature = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+
+        // Kalau signature nggak valid, tolak
+        if ($signatureKey !== $expectedSignature) {
+            return response('Invalid signature', 403);
+        }
+
+        // Cari data pembayaran berdasarkan order_id
+        $payment = Payment::where('transaction_id', $transactionId)->first();
+
+        if (!$payment) {
+            return response('Payment not found', 404);
+        }
+
+        // Mapping status dari Midtrans ke status internal
+        $transactionStatus = $request->input('transaction_status');
+
+        switch ($transactionStatus) {
+            case 'settlement':
+            case 'capture':
+                $status = PaymentStatus::Paid;
+                break;
+            case 'pending':
+                $status = PaymentStatus::Pending;
+                break;
+            case 'deny':
+            case 'expire':
+            case 'cancel':
+                $status = PaymentStatus::Failed;
+                break;
+            default:
+                $status = PaymentStatus::Pending;
+        }
+
+        // Update payment
+        $payment->update(['status' => $status]);
+
+        return response('OK', 200); // wajib balikin 200 biar Midtrans gak retry
     }
 }

@@ -123,56 +123,112 @@
                 <span style="position: absolute; top: 0; left: 8px;font-size: 20px;"></span>
             </a>
         </div>
-    @endif
 
-    <!-- Modal -->
-    <div class="modal fade" id="menuModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    <h4 class="modal-title" id="modalMenuTitle">Pilih Menu</h4>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="menuId">
-                    <div class="row">
-                        <div class="col-xs-12">
-                            <div class="form-group">
-                                <label>Menu</label>
-                                <p id="menuName"></p>
+        <!-- Modal -->
+        <div class="modal fade" id="menuModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title" id="modalMenuTitle">Pilih Menu</h4>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="menuId">
+                        <div class="row">
+                            <div class="col-xs-12">
+                                <div class="form-group">
+                                    <label>Menu</label>
+                                    <p id="menuName"></p>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-xs-6" id="modalVariantWrapper">
-                            <div class="form-group">
-                                <label for="modalVariant">Variant</label>
-                                <select id="modalVariant" class="form-control">
-                                    <option value="">-- Select Variant --</option>
-                                    <option value="hot">Hot</option>
-                                    <option value="cold">Cold</option>
-                                </select>
+                            <div class="col-xs-6" id="modalVariantWrapper">
+                                <div class="form-group">
+                                    <label for="modalVariant">Variant</label>
+                                    <select id="modalVariant" class="form-control">
+                                        <option value="">-- Select Variant --</option>
+                                        <option value="hot">Hot</option>
+                                        <option value="cold">Cold</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-xs-6" id="modalQtyWrapper">
-                            <div class="form-group">
-                                <label for="modalQty">Qty</label>
-                                <input type="number" id="modalQty" class="form-control" value="1" min="1">
+                            <div class="col-xs-6" id="modalQtyWrapper">
+                                <div class="form-group">
+                                    <label for="modalQty">Qty</label>
+                                    <input type="number" id="modalQty" class="form-control" value="1" min="1">
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">
-                        Cancel
-                    </button>
-                    <button type="button" class="btn btn-primary" id="addToCart">
-                        Add to Cart
-                    </button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="addToCart">
+                            Add to Cart
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    @endif
+
+    @if (request()->is('reservations'))
+        <div class="modal fade" id="reservationMenuModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title" id="modalMenuTitle">Pilih Menu</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-xs-12">
+                                <div class="form-group">
+                                    <label for="menuId">Menu</label>
+                                    <select id="menuId" class="form-control" required>
+                                        <option value="">-- Select Menu --</option>
+                                        @foreach ($menus as $menu)
+                                            <option value="{{ $menu->id }}" data-price="{{ json_encode($menu->prices) }}">
+                                                ({{ $menu->category->name }}) {{ $menu->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-xs-6" id="modalVariantWrapper">
+                                <div class="form-group">
+                                    <label for="modalVariant">Variant</label>
+                                    <select id="modalVariant" class="form-control">
+                                        <option value="">-- Select Variant --</option>
+                                        <option value="hot">Hot</option>
+                                        <option value="cold">Cold</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-xs-6" id="modalQtyWrapper">
+                                <div class="form-group">
+                                    <label for="modalQty">Qty</label>
+                                    <input type="number" id="modalQty" class="form-control" value="1" min="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="button" class="btn btn-primary" id="addToCart">
+                            Add Menu
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- jQuery -->
     <script src="js/jquery.min.js"></script>

@@ -53,6 +53,18 @@ class TableResource extends Resource
                     ->label('Lokasi'),
             ])
             ->actions([
+                Tables\Actions\Action::make('qrcode')
+                    ->label('QR Code')
+                    ->url(function (TableModel $record): string {
+                        $QrCodeUrl = urlencode(url()->query('/menus', [
+                            'table' => $record->number
+                        ]));
+                        
+                        return "https://api.qrserver.com/v1/create-qr-code?data=$QrCodeUrl";
+                    })
+                    ->openUrlInNewTab()
+                    ->iconButton()
+                    ->icon('heroicon-o-qr-code'),
                 Tables\Actions\EditAction::make()
                     ->iconButton(),
                 Tables\Actions\DeleteAction::make()

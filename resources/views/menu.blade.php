@@ -1,5 +1,5 @@
 @extends('layouts.main')
-
+@use('Illuminate\Support\Facades\Storage')
 @section('content')
     @include('partials.navbar')
     <div id="fh5co-menus">
@@ -22,7 +22,11 @@
                                 <li style="cursor: pointer;" data-menu="{{ json_encode($beverage) }}">
                                     <div class="fh5co-food-desc">
                                         <figure>
-                                            <img src="{{ $beverage->image }}" class="img-responsive">
+                                            <img
+                                                src="{{ Storage::url($beverage->image) }}"
+                                                class="img-responsive"
+                                                onerror="this.onerror=null;this.src='/images/logo-text.png';"
+                                            />
                                         </figure>
                                         <div>
                                             <h3>{{ $beverage->name }}</h3>
@@ -50,7 +54,11 @@
                                 <li style="cursor: pointer;" data-menu="{{ json_encode($food) }}">
                                     <div class="fh5co-food-desc">
                                         <figure>
-                                            <img src="{{ $food->image }}" class="img-responsive">
+                                            <img
+                                                src="{{ Storage::url($food->image) }}"
+                                                class="img-responsive"
+                                                onerror="this.onerror=null;this.src='/images/logo-text.png';"
+                                            />
                                         </figure>
                                         <div>
                                             <h3>{{ $food->name }}</h3>

@@ -40,7 +40,7 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'table' => 'string',
+            'table' => 'nullable|integer|exists:tables,number',
             'payment_method' => 'required|in:qris,transfer,cash',
             'items' => 'required|array|min:1',
             'items.*.menu_id' => 'required|exists:menus,id',

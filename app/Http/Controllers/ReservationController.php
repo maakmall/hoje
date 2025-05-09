@@ -12,11 +12,11 @@ use App\Models\Location;
 use App\Models\Menu;
 use App\Models\MenuPrice;
 use App\Models\Reservation;
-use App\Rules\ReservationCapacity;
 use App\Services\Midtrans;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ReservationController extends Controller
 {
@@ -48,7 +48,9 @@ class ReservationController extends Controller
             try {
                 $datetime = Carbon::createFromFormat('m/d/Y h:i A', $validated['date']);
             } catch (\Exception $e) {
-                abort(422, 'Format tanggal tidak valid. Gunakan format: mm/dd/yyyy hh:mm AM/PM');
+                throw ValidationException::withMessages([
+                    'date' => 'Format tanggal tidak valid. Gunakan format: mm/dd/yyyy hh:mm AM/PM',
+                ]);
             }
             
             $totalBooked = Reservation::whereDate('datetime', $datetime)
@@ -60,9 +62,9 @@ class ReservationController extends Controller
             $availableCapacity = $location->capacity - $totalBooked;
 
             if ($validated['number_of_people'] > $availableCapacity) {
-                return response()->json([
-                    'message' => "Kapasitas penuh. Tersisa $availableCapacity kursi."
-                ], 422);
+                throw ValidationException::withMessages([
+                    'number_of_people' => "Kapasitas penuh. Tersisa $availableCapacity kursi.",
+                ]);
             }
 
             $reservation = Reservation::create([
@@ -86,7 +88,9 @@ class ReservationController extends Controller
                     ->value('price');
 
                 if (is_null($price)) {
-                    abort(422, 'Harga menu tidak ditemukan.');
+                    throw ValidationException::withMessages([
+                        'cart' => ['Harga menu tidak ditemukan.'],
+                    ]);
                 }
 
                 return [

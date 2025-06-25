@@ -31,12 +31,12 @@ class ViewReservation extends ViewRecord
             Actions\Action::make('finish_payment')
                 ->label('Selesaikan Pembayaran')
                 ->visible(function (Reservation $record): bool {
-                    $total = $record->order->orderMenus->sum('subtotal_price');
+                    $total = $record->order->orderMenus->sum('subtotal_harga');
                     $amount = $record->order->payments
                         ->where('status', PaymentStatus::Paid)
-                        ->sum('amount');
+                        ->sum('jumlah');
 
-                    return $amount !== $total;
+                    return $amount !== $total && $amount !== 0;
                 })
                 ->modalWidth(MaxWidth::Medium)
                 ->form([
@@ -45,12 +45,12 @@ class ViewReservation extends ViewRecord
                         ->content(function (Reservation $record): HtmlString {
                             $amount = $record->order->payments
                                 ->where('status', PaymentStatus::Paid)
-                                ->sum('amount');
+                                ->sum('jumlah');
 
                             if ($amount == 0) {
-                                $amount = $record->order->orderMenus->sum('subtotal_price');
+                                $amount = $record->order->orderMenus->sum('subtotal_harga');
                             } else {
-                                $amount = $record->order->orderMenus->sum('subtotal_price') - $amount;
+                                $amount = $record->order->orderMenus->sum('subtotal_harga') - $amount;
                             }
 
                             return new HtmlString("<span class='text-lg font-semibold'>" .
@@ -70,19 +70,19 @@ class ViewReservation extends ViewRecord
                     $paymentMethod = PaymentMethod::from($data['payment_method']);
                     $amount = $record->order->payments
                         ->where('status', PaymentStatus::Paid)
-                        ->sum('amount');
+                        ->sum('jumlah');
 
                     if ($amount == 0) {
-                        $amount = $record->order->orderMenus->sum('subtotal_price');
+                        $amount = $record->order->orderMenus->sum('subtotal_harga');
                     } else {
-                        $amount = $record->order->orderMenus->sum('subtotal_price') - $amount;
+                        $amount = $record->order->orderMenus->sum('subtotal_harga') - $amount;
                     }
 
                     $payment = [
                         'id' => Numeric::generateId('payments'),
-                        'datetime' => $record->order->datetime,
-                        'amount' => $amount,
-                        'method' => $paymentMethod,
+                        'waktu' => $record->order->waktu,
+                        'jumlah' => $amount,
+                        'metode' => $paymentMethod,
                         'status' => PaymentStatus::Pending,
                     ];
 
@@ -107,9 +107,9 @@ class ViewReservation extends ViewRecord
 
                         $response = $midtrans->createTransaction($payload);
 
-                        $payment['transaction_id'] = $response->transaction_id ?? null;
-                        $payment['va_number'] = $response->va_numbers[0]->va_number ?? null;
-                        $payment['qr_url'] = $response->actions[0]->url ?? null;
+                        $payment['id_transaksi'] = $response->transaction_id ?? null;
+                        $payment['akun_virtual'] = $response->va_numbers[0]->va_number ?? null;
+                        $payment['tautan'] = $response->actions[0]->url ?? null;
                     }
 
                     $payment = $record->order->payments()->create($payment);
@@ -119,6 +119,104 @@ class ViewReservation extends ViewRecord
                         'redirect' => 'reservation',
                         'pid' => $payment->id
                     ]));
+                }),
+            Actions\Action::make('Bayar')
+                ->modalWidth('lg')
+                ->modalSubmitActionLabel('Bayar')
+                ->visible(function (Reservation $record): bool {
+                    $total = $record->order->orderMenus->sum('subtotal_harga');
+                    $amount = $record->order->payments
+                        ->where('status', PaymentStatus::Paid)
+                        ->sum('jumlah');
+
+                    return $amount !== $total && $amount == 0;
+                })
+                ->form(function (Reservation $record): ?array {
+                    if ($record->order->payments->where('status', PaymentStatus::Pending)->isNotEmpty()) {
+                        return null;
+                    }
+
+                    return [
+                        Forms\Components\Placeholder::make('total')
+                            ->inlineLabel()
+                            ->content(function (Reservation $record): HtmlString {
+                                $amount = $record->orderMenus->sum('subtotal_harga');
+                                $amount -= $amount * 50 / 100;
+
+                                return new HtmlString("<span class='text-lg font-semibold'>" .
+                                    Numeric::rupiah($amount, true)
+                                    . "</span>");
+                            })
+                            ->helperText(
+                                'Pembayaran DP 50% dari total harga reservasi.'
+                            ),
+                        Forms\Components\Select::make('payment_method')
+                            ->label('Metode Pembayaran')
+                            ->options(PaymentMethod::select())
+                            ->required(),
+                    ];
+                })
+                ->action(function (Reservation $record, array $data): void {
+                    if ($record->order->payments?->where('status', PaymentStatus::Pending)->isNotEmpty()) {
+                        $this->redirect(OrderResource::getUrl('payment', [
+                            'record' => $record->order->id,
+                            'pid' => $record->order->payments?->where('status', PaymentStatus::Pending)
+                                ->first()?->id,
+                            'redirect' => 'reservation'
+                        ]));
+                    } else {
+                        $paymentMethod = PaymentMethod::from($data['payment_method']);
+                        $amount = $record->orderMenus->sum('subtotal_harga');
+                        $amount -= $amount * 50 / 100;
+
+                        $payment = [
+                            'id' => Numeric::generateId('payments'),
+                            'waktu' => now()->toDateTimeString(),
+                            'jumlah' => $amount,
+                            'metode' => $paymentMethod,
+                            'status' => $paymentMethod === PaymentMethod::Cash
+                                ? PaymentStatus::Paid
+                                : PaymentStatus::Pending,
+                        ];
+
+                        if ($paymentMethod === PaymentMethod::Cash) {
+                            $payment['status'] = PaymentStatus::Paid;
+                        } else {
+                            $midtrans = new Midtrans();
+
+                            $payload = [
+                                'payment_type' => $paymentMethod === PaymentMethod::Qris ? 'gopay' : 'bank_transfer',
+                                'transaction_details' => [
+                                    'order_id' => $record->order->id . 'DP',
+                                    'gross_amount' => $amount,
+                                ],
+                                'custom_expiry' => [
+                                    'unit' => 'day',
+                                    'expiry_duration' => 1,
+                                ],
+                            ];
+
+                            if ($paymentMethod === PaymentMethod::Transfer) {
+                                $payload['bank_transfer'] = [
+                                    'bank' => 'bca',
+                                ];
+                            }
+
+                            $response = $midtrans->createTransaction($payload);
+
+                            $payment['id_transaksi'] = $response->transaction_id ?? null;
+                            $payment['akun_virtual'] = $response->va_numbers[0]->va_number ?? null;
+                            $payment['tautan'] = $response->actions[0]->url ?? null;
+                        }
+
+                        $paymentId = $record->order->payments()->create($payment)->id;
+
+                        $this->redirect(OrderResource::getUrl('payment', [
+                            'record' => $record->order->id,
+                            'redirect' => 'reservation',
+                            'pid' => $paymentId
+                        ]));
+                    }
                 })
         ];
     }
@@ -138,24 +236,26 @@ class ViewReservation extends ViewRecord
                                     ->schema([
                                         Infolists\Components\TextEntry::make('id')
                                             ->label('ID Reservasi'),
-                                        Infolists\Components\TextEntry::make('datetime')
+                                        Infolists\Components\TextEntry::make('waktu')
                                             ->label('Tanggal')
                                             ->dateTime('j M Y H:i'),
+                                        Infolists\Components\TextEntry::make('location.nama')
+                                            ->label('Lokasi'),
                                     ]),
                                 Infolists\Components\Section::make()
                                     ->columns()
                                     ->columnSpan(2)
                                     ->schema([
-                                        Infolists\Components\TextEntry::make('customer_name')
+                                        Infolists\Components\TextEntry::make('nama_pelanggan')
                                             ->label('Pelanggan'),
                                         Infolists\Components\TextEntry::make('status')
                                             ->hiddenLabel()
                                             ->badge()
                                             ->getStateUsing(function (Reservation $record): string {
-                                                $total = $record->order->orderMenus->sum('subtotal_price');
+                                                $total = $record->order->orderMenus->sum('subtotal_harga');
                                                 $amount = $record->order->payments
                                                     ->where('status', PaymentStatus::Paid)
-                                                    ->sum('amount');
+                                                    ->sum('jumlah');
 
                                                 if ($amount == 0) {
                                                     return 'Belum Bayar';
@@ -165,15 +265,17 @@ class ViewReservation extends ViewRecord
                                                     ? 'DP'
                                                     : 'Dibayar';
                                             }),
-                                        Infolists\Components\TextEntry::make('location.name')
-                                            ->label('Lokasi'),
-                                        Infolists\Components\TextEntry::make('number_of_people')
+                                        Infolists\Components\TextEntry::make('email_pelanggan')
+                                            ->label('Email'),
+                                        Infolists\Components\TextEntry::make('telepon_pelanggan')
+                                            ->label('Telepon'),
+                                        Infolists\Components\TextEntry::make('jumlah_orang')
                                             ->label('Jumlah Orang')
                                             ->suffix(' Orang'),
                                     ]),
                                 Infolists\Components\Section::make()
                                     ->schema([
-                                        Infolists\Components\TextEntry::make('notes')
+                                        Infolists\Components\TextEntry::make('catatan')
                                             ->label('Catatan')
                                             ->placeholder('-')
                                             ->columnSpanFull(),
@@ -184,14 +286,14 @@ class ViewReservation extends ViewRecord
                                             ->hiddenLabel()
                                             ->columns(7)
                                             ->schema([
-                                                Infolists\Components\TextEntry::make('menu.name')
+                                                Infolists\Components\TextEntry::make('menu.nama')
                                                     ->columnSpan(function (OrderMenu $record): int {
-                                                        return $record->variant_beverage ? 3 : 4;
+                                                        return $record->variasi_minuman ? 3 : 4;
                                                     }),
-                                                Infolists\Components\TextEntry::make('variant_beverage')
+                                                Infolists\Components\TextEntry::make('variasi_minuman')
                                                     ->label('Varian')
                                                     ->hidden(
-                                                        fn(OrderMenu $record): bool => !$record->variant_beverage
+                                                        fn(OrderMenu $record): bool => !$record->variasi_minuman
                                                     )
                                                     ->formatStateUsing(
                                                         fn(?VariantBeverage $state): string => $state->name
@@ -202,14 +304,14 @@ class ViewReservation extends ViewRecord
                                                     ->formatStateUsing(
                                                         function (Menu $state, OrderMenu $record): string {
                                                             $price = $state->prices
-                                                                ->where('variant_beverage', $record->variant_beverage)->first()->price;
+                                                                ->where('variasi_minuman', $record->variasi_minuman)->first()->harga;
 
                                                             return Numeric::rupiah($price);
                                                         }
                                                     ),
-                                                Infolists\Components\TextEntry::make('quantity')
+                                                Infolists\Components\TextEntry::make('jumlah')
                                                     ->label('Jumlah'),
-                                                Infolists\Components\TextEntry::make('subtotal_price')
+                                                Infolists\Components\TextEntry::make('subtotal_harga')
                                                     ->label('Subtotal')
                                                     ->prefix('Rp ')
                                                     ->numeric(thousandsSeparator: '.'),
@@ -238,16 +340,16 @@ class ViewReservation extends ViewRecord
 
                                                 return null;
                                             }),
-                                        Infolists\Components\TextEntry::make('method')
+                                        Infolists\Components\TextEntry::make('metode')
                                             ->label('Metode Pembayaran')
                                             ->formatStateUsing(
                                                 fn(PaymentMethod $state): string => $state->label()
                                             ),
-                                        Infolists\Components\TextEntry::make('amount')
+                                        Infolists\Components\TextEntry::make('jumlah')
                                             ->label('Nominal')
                                             ->prefix('Rp ')
                                             ->numeric(thousandsSeparator: '.'),
-                                        Infolists\Components\ImageEntry::make('proof')
+                                        Infolists\Components\ImageEntry::make('link')
                                             ->label('Bukti Pembayaran')
                                             ->placeholder('-')
                                             ->columnSpanFull(),

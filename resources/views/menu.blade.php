@@ -23,21 +23,21 @@
                                     <div class="fh5co-food-desc">
                                         <figure>
                                             <img
-                                                src="{{ Storage::url($beverage->image) }}"
+                                                src="{{ Storage::url($beverage->gambar) }}"
                                                 class="img-responsive"
                                                 onerror="this.onerror=null;this.src='/images/logo-text.png';"
                                             />
                                         </figure>
                                         <div>
-                                            <h3>{{ $beverage->name }}</h3>
-                                            <p>{{ $beverage->description ?? '-' }}</p>
+                                            <h3>{{ $beverage->nama }}</h3>
+                                            <p>{{ $beverage->deskripsi ?? '-' }}</p>
                                         </div>
                                     </div>
                                     <div class="fh5co-food-pricing">
                                         @foreach ($beverage->prices as $price)
                                             <div>
-                                                {{ $price->variant_beverage ? "({$price->variant_beverage->name})" : '' }}
-                                                {{ App\Helpers\Numeric::rupiah($price->price) }}
+                                                {{ $price->variasi_minuman ? "({$price->variasi_minuman->name})" : '' }}
+                                                {{ App\Helpers\Numeric::rupiah($price->harga) }}
                                             </div>
                                         @endforeach
                                     </div>
@@ -55,18 +55,18 @@
                                     <div class="fh5co-food-desc">
                                         <figure>
                                             <img
-                                                src="{{ Storage::url($food->image) }}"
+                                                src="{{ Storage::url($food->gambar) }}"
                                                 class="img-responsive"
                                                 onerror="this.onerror=null;this.src='/images/logo-text.png';"
                                             />
                                         </figure>
                                         <div>
-                                            <h3>{{ $food->name }}</h3>
-                                            <p>{{ $food->description ?? '-' }}</p>
+                                            <h3>{{ $food->nama }}</h3>
+                                            <p>{{ $food->deskripsi ?? '-' }}</p>
                                         </div>
                                     </div>
                                     <div class="fh5co-food-pricing">
-                                        {{ App\Helpers\Numeric::rupiah($food->prices->first()->price) }}
+                                        {{ App\Helpers\Numeric::rupiah($food->prices->first()->harga) }}
                                     </div>
                                 </li>
                             @endforeach
@@ -112,7 +112,7 @@
             // Open Modal in menu list
             $('li[data-menu]').click(function() {
                 const menu = JSON.parse($(this).attr('data-menu'))
-                $('#menuName').text(menu.name)
+                $('#menuName').text(menu.nama)
                 $('#menuName').attr('data-price', JSON.stringify(menu.prices))
                 $('#menuId').val(menu.id)
                 $('#modalQty').val(1)
@@ -136,8 +136,8 @@
                 const qty = parseInt($('#modalQty').val())
                 const variant = $('#modalVariant').is(':visible') ? $('#modalVariant').val() : null
                 const price = menuPrices.length > 1 ?
-                    menuPrices.find(p => p.variant_beverage == variant).price :
-                    menuPrices[0].price
+                    menuPrices.find(p => p.variasi_minuman == variant).harga :
+                    menuPrices[0].harga
                 console.log(menuPrices, variant, price);
 
                 addToCart({

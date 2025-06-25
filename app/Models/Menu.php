@@ -10,6 +10,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Menu extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string|null
+     */
+    protected $table = 'menu';
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool
@@ -22,11 +29,11 @@ class Menu extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'description',
-        'image',
-        'category',
-        'availability'
+        'nama',
+        'deskripsi',
+        'gambar',
+        'kategori',
+        'tersedia'
     ];
 
     /**
@@ -37,8 +44,8 @@ class Menu extends Model
     protected function casts(): array
     {
         return [
-            'category' => MenuCategory::class,
-            'availability' => 'bool',
+            'kategori' => MenuCategory::class,
+            'tersedia' => 'bool',
         ];
     }
 
@@ -47,7 +54,7 @@ class Menu extends Model
      */
     public function prices(): HasMany
     {
-        return $this->hasMany(MenuPrice::class);
+        return $this->hasMany(MenuPrice::class, 'id_menu');
     }
 
     /**
@@ -55,7 +62,7 @@ class Menu extends Model
      */
     public function scopeFood(Builder $query): Builder
     {
-        return $query->where('category', MenuCategory::Food);
+        return $query->where('kategori', MenuCategory::Food);
     }
 
     /**
@@ -63,7 +70,7 @@ class Menu extends Model
      */
     public function scopeBeverage(Builder $query): Builder
     {
-        return $query->where('category', MenuCategory::Beverage);
+        return $query->where('kategori', MenuCategory::Beverage);
     }
 
     /**
@@ -71,6 +78,6 @@ class Menu extends Model
      */
     public function scopeAvailable(Builder $query): Builder
     {
-        return $query->where('availability', true);
+        return $query->where('tersedia', true);
     }
 }

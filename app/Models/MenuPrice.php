@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 class MenuPrice extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string|null
+     */
+    protected $table = 'harga_menu';
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool
@@ -20,9 +27,9 @@ class MenuPrice extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'menu_id',
-        'variant_beverage',
-        'price'
+        'id_menu',
+        'variasi_minuman',
+        'harga'
     ];
 
     /**
@@ -33,7 +40,7 @@ class MenuPrice extends Model
     protected function casts(): array
     {
         return [
-            'variant_beverage' => VariantBeverage::class,
+            'variasi_minuman' => VariantBeverage::class,
         ];
     }
 }

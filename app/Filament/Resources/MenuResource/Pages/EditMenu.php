@@ -33,17 +33,17 @@ class EditMenu extends EditRecord
 
             $record->prices()->createMany([
                 [
-                    'price' => $price,
-                    'variant_beverage' => VariantBeverage::Hot,
+                    'harga' => $price,
+                    'variasi_minuman' => VariantBeverage::Hot,
                 ],
                 [
-                    'price' => $priceCold,
-                    'variant_beverage' => VariantBeverage::Cold,
+                    'harga' => $priceCold,
+                    'variasi_minuman' => VariantBeverage::Cold,
                 ]
             ]);
         } else {
             $record->prices()->create([
-                'price' => $price,
+                'harga' => $price,
             ]);
         }
 

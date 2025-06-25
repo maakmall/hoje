@@ -29,18 +29,18 @@ class CreateMenu extends CreateRecord
             $menu = static::getModel()::create($data);
             $menu->prices()->createMany([
                 [
-                    'price' => $price,
-                    'variant_beverage' => VariantBeverage::Hot,
+                    'harga' => $price,
+                    'variasi_minuman' => VariantBeverage::Hot,
                 ],
                 [
-                    'price' => $priceCold,
-                    'variant_beverage' => VariantBeverage::Cold,
+                    'harga' => $priceCold,
+                    'variasi_minuman' => VariantBeverage::Cold,
                 ]
             ]);
         } else {
             $menu = static::getModel()::create($data);
             $menu->prices()->create([
-                'price' => $price,
+                'harga' => $price,
             ]);
         }
 

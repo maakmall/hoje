@@ -39,12 +39,12 @@ class CreateReservation extends CreateRecord
             $reservation = static::getModel()::create($data);
             $order = $reservation->order()->create([
                 'id' => Numeric::generateId('orders'),
-                'datetime' => $data['datetime'],
+                'waktu' => $data['waktu'],
             ]);
     
             $order->orderMenus()->createMany($orderMenus);
 
-            $amount = $order->orderMenus->sum('subtotal_price');
+            $amount = $order->orderMenus->sum('subtotal_harga');
             $amount -= $amount * 50 / 100;
 
             // if ($data['payment_type'] == 'dp') {
@@ -53,9 +53,9 @@ class CreateReservation extends CreateRecord
     
             $payment = [
                 'id' => Numeric::generateId('payments'),
-                'datetime' => $order->datetime,
-                'amount' => $amount,
-                'method' => $paymentMethod,
+                'waktu' => $order->waktu,
+                'jumlah' => $amount,
+                'metode' => $paymentMethod,
                 'status' => PaymentStatus::Pending,
             ];
     
@@ -80,9 +80,9 @@ class CreateReservation extends CreateRecord
     
                 $response = $midtrans->createTransaction($payload);
     
-                $payment['transaction_id'] = $response->transaction_id ?? null;
-                $payment['va_number'] = $response->va_numbers[0]->va_number ?? null;
-                $payment['qr_url'] = $response->actions[0]->url ?? null;
+                $payment['id_transaksi'] = $response->transaction_id ?? null;
+                $payment['akun_virtual'] = $response->va_numbers[0]->va_number ?? null;
+                $payment['tautan'] = $response->actions[0]->url ?? null;
             }
     
             $this->paymentId = $order->payments()->create($payment)->id;

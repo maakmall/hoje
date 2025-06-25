@@ -22,12 +22,12 @@ class LocationResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('name')
+                Forms\Components\TextInput::make('nama')
                     ->label('Nama')
                     ->required()
                     ->maxLength(50)
                     ->unique(ignoreRecord: true),
-                Forms\Components\TextInput::make('capacity')
+                Forms\Components\TextInput::make('kapasitas')
                     ->label('Jumlah Kapasitas')
                     ->required()
                     ->suffix('Orang')
@@ -40,10 +40,10 @@ class LocationResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make('nama')
                     ->label('Nama')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('capacity')
+                Tables\Columns\TextColumn::make('kapasitas')
                     ->label('Kapasitas')
                     ->numeric()
                     ->suffix(' Orang')

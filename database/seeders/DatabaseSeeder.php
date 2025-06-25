@@ -15,22 +15,22 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::factory()->create([
-            'name' => 'Admin',
+            'nama' => 'Admin',
             'email' => 'admin@hoje.com',
         ]);
 
         Location::insert([
             [
-                'name' => 'Indoor Non Smooking',
-                'capacity' => 20,
+                'nama' => 'Indoor Non Smooking',
+                'kapasitas' => 20,
             ],
             [
-                'name' => 'Indoor Smooking',
-                'capacity' => 80,
+                'nama' => 'Indoor Smooking',
+                'kapasitas' => 80,
             ],
             [
-                'name' => 'Outdoor',
-                'capacity' => 40,
+                'nama' => 'Outdoor',
+                'kapasitas' => 40,
             ],
         ]);
 
@@ -39,12 +39,12 @@ class DatabaseSeeder extends Seeder
         $tableNumber = 1;
 
         foreach ($locations as $location) {
-            $tableCount = ceil($location->capacity / 4);
+            $tableCount = ceil($location->kapasitas / 4);
 
             for ($i = 0; $i < $tableCount; $i++) {
                 $tables[] = [
-                    'number' => $tableNumber++,
-                    'location_id' => $location->id,
+                    'nomor' => $tableNumber++,
+                    'id_lokasi' => $location->id,
                 ];
             }
         }

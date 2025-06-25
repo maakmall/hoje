@@ -23,6 +23,21 @@
                     <div class="row">
                         <div class="col-xs-6" style="padding-right: 7.5px;">
                             <div class="form-group">
+                                <label for="telephone" class="sr-only">Phone</label>
+                                <input id="telephone" class="form-control" placeholder="Phone" type="tel" required>
+                            </div>
+                        </div>
+                        <div class="col-xs-6" style="padding-left: 7.5px;">
+                            <div class="form-group">
+                                <label for="email" class="sr-only">Email</label>
+                                <input id="email" class="form-control" placeholder="Email"
+                                    type="email" min="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-xs-6" style="padding-right: 7.5px;">
+                            <div class="form-group">
                                 <label for="date" class="sr-only">Date</label>
                                 <input id="date" class="form-control" placeholder="Date &amp; Time" type="text"
                                     required>
@@ -41,7 +56,7 @@
                         <select class="form-control" id="location" name="location_id" required>
                             <option>Select a Location</option>
                             @foreach ($locations as $location)
-                                <option value="{{ $location->id }}">{{ $location->name }}</option>
+                                <option value="{{ $location->id }}">{{ $location->nama }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -145,7 +160,7 @@
 
                 if (!menuId || qty < 1 || (prices.length > 1 && !variant)) {
                     Toastify({
-                        text: "Lengkapi data menu sebelum menambah!",
+                        text: "Please select a menu and quantity!",
                         position: "center",
                         style: {
                             background: "linear-gradient(to right, #FF5F6D, #FFC371)",
@@ -158,8 +173,8 @@
                 const cart = JSON.parse(localStorage.getItem('hoje_reservation_menu') || '[]')
 
                 const price = prices.length > 1 ?
-                    prices.find(p => p.variant_beverage == variant).price :
-                    prices[0].price
+                    prices.find(p => p.variasi_minuman == variant).harga :
+                    prices[0].harga
 
                 // Cek apakah menu dengan ID + variant udah ada
                 const existingIndex = cart.findIndex(item =>
@@ -262,6 +277,8 @@
                 $(this).attr('disabled', true).text('Processing...')
 
                 const name = $('#name').val()
+                const telephone = $('#telephone').val()
+                const email = $('#email').val()
                 const date = $('#date').val()
                 const numberOfPeople = $('#numberOfPeople').val()
                 const locationId = $('#location').val()
@@ -307,6 +324,8 @@
                     data: {
                         _token: '{{ csrf_token() }}',
                         customer_name: name,
+                        customer_phone: telephone,
+                        customer_email: email,
                         date,
                         number_of_people: numberOfPeople,
                         location_id: locationId,
@@ -328,6 +347,8 @@
 
                         localStorage.setItem('hoje_reservation', JSON.stringify({
                             customer_name: name,
+                            customer_phone: telephone,
+                            customer_email: email,
                             date: date,
                             number_of_people: numberOfPeople,
                             location_id: locationId,

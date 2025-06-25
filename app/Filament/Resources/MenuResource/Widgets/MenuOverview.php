@@ -28,7 +28,7 @@ class MenuOverview extends BaseWidget
                 ->icon('heroicon-o-tag'),
             Stat::make(
                 'Rata-rata',
-                Numeric::rupiah(MenuPrice::avg('price') ?? 0, true)
+                Numeric::rupiah(MenuPrice::avg('harga') ?? 0, true)
             )
                 ->icon('heroicon-o-banknotes')
                 ->description('Harga rata-rata menu')

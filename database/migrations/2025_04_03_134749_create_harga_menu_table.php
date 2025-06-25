@@ -12,13 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('menu_prices', function (Blueprint $table) {
+        Schema::create('harga_menu', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('menu_id')
-                ->constrained()
+            $table->foreignId('id_menu')
+                ->constrained('menu')
                 ->cascadeOnDelete();
-            $table->enum('variant_beverage', VariantBeverage::values())->nullable();
-            $table->integer('price');
+            $table->enum('variasi_minuman', VariantBeverage::values())->nullable();
+            $table->integer('harga');
         });
     }
 
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('menu_prices');
+        Schema::dropIfExists('harga_menu');
     }
 };

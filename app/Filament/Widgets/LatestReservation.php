@@ -20,7 +20,7 @@ class LatestReservation extends BaseWidget
             ->query(
                 Reservation::query()
                     ->with(['order.orderMenus', 'order.payments'])
-                    ->whereDate('datetime', now()->toDateString())
+                    ->whereDate('waktu', now()->toDateString())
             )
             ->recordUrl(
                 fn(Reservation $record): string => ReservationResource::getUrl('view', ['record' => $record])
@@ -30,11 +30,11 @@ class LatestReservation extends BaseWidget
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID'),
-                Tables\Columns\TextColumn::make('customer_name')
+                Tables\Columns\TextColumn::make('nama_pelanggan')
                     ->label('Pelanggan'),
-                Tables\Columns\TextColumn::make('location.name')
+                Tables\Columns\TextColumn::make('location.nama')
                     ->label('Lokasi'),
-                Tables\Columns\TextColumn::make('number_of_people')
+                Tables\Columns\TextColumn::make('jumlah_orang')
                     ->label('Jumlah Orang')
                     ->suffix(' Orang')
                     ->numeric()
@@ -42,10 +42,10 @@ class LatestReservation extends BaseWidget
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->getStateUsing(function (Reservation $record): string {
-                        $total = $record->order->orderMenus->sum('subtotal_price');
+                        $total = $record->order->orderMenus->sum('subtotal_harga');
                         $amount = $record->order->payments
                             ->where('status', PaymentStatus::Paid)
-                            ->sum('amount');
+                            ->sum('jumlah');
 
                         if ($amount == 0) {
                             return 'Belum Bayar';

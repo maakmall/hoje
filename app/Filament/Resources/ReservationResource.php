@@ -44,36 +44,45 @@ class ReservationResource extends Resource
                                 Forms\Components\Section::make()
                                     ->columns()
                                     ->schema([
-                                        Forms\Components\TextInput::make('customer_name')
+                                        Forms\Components\TextInput::make('nama_pelanggan')
                                             ->label('Nama Pelanggan')
                                             ->required()
                                             ->columnSpanFull(),
-                                        Forms\Components\Select::make('location_id')
-                                            ->label('Lokasi')
-                                            ->relationship('location', 'name')
+                                        Forms\Components\TextInput::make('email_pelanggan')
+                                            ->label('Email Pelanggan')
+                                            ->required()
+                                            ->email(),
+                                        Forms\Components\TextInput::make('telepon_pelanggan')
+                                            ->label('Telepon Pelanggan')
+                                            ->tel()
                                             ->required(),
-                                        Forms\Components\TextInput::make('number_of_people')
+                                        Forms\Components\TextInput::make('jumlah_orang')
                                             ->label('Jumlah Orang')
                                             ->suffix('Orang')
                                             ->minValue(1)
                                             ->extraInputAttributes(['min' => 1])
                                             ->required()
                                             ->rules([new ReservationCapacity()])
-                                            ->numeric(),
+                                            ->numeric()
+                                            ->columnSpanFull(),
                                     ])
                             ])->columnSpan(2),
                             Forms\Components\Group::make([
                                 Forms\Components\Section::make()
                                     ->schema([
-                                        Forms\Components\DateTimePicker::make('datetime')
+                                        Forms\Components\DateTimePicker::make('waktu')
                                             ->label('Tanggal')
                                             ->minDate(now())
+                                            ->required(),
+                                        Forms\Components\Select::make('id_lokasi')
+                                            ->label('Lokasi')
+                                            ->relationship('location', 'nama')
                                             ->required(),
                                     ])
                             ]),
                             Forms\Components\Section::make()
                                 ->schema([
-                                    Forms\Components\Textarea::make('notes')
+                                    Forms\Components\Textarea::make('catatan')
                                         ->label('Catatan')
                                         ->placeholder('Tulis catatan tambahan di sini')
                                 ])
@@ -108,7 +117,7 @@ class ReservationResource extends Resource
                                 ->schema([
                                     Forms\Components\Placeholder::make('customer')
                                         ->label('Pelanggan')
-                                        ->content(fn(Get $get): ?string => $get('customer_name')),
+                                        ->content(fn(Get $get): ?string => $get('nama_pelanggan')),
                                     Forms\Components\Radio::make('payment_method')
                                         ->label('Metode Pembayaran')
                                         ->required()
@@ -141,7 +150,7 @@ class ReservationResource extends Resource
                                         ->content(function (Get $get): HtmlString {
                                             $orderMenus = $get('orderMenus') ?? [];
                                             $menuIds = collect($orderMenus)
-                                                ->pluck('menu_id')
+                                                ->pluck('id_menu')
                                                 ->unique()
                                                 ->all();
 
@@ -149,12 +158,12 @@ class ReservationResource extends Resource
                                             $rows = [];
 
                                             foreach ($orderMenus as $item) {
-                                                $menu = $menus[$item['menu_id']] ?? null;
-                                                $menuName = $menu?->name ?? 'Unknown Menu';
-                                                $variant = $item['variant_beverage'] ? ' (' . VariantBeverage::from($item['variant_beverage'])->name . ')' : '';
-                                                $qty = $item['quantity'];
+                                                $menu = $menus[$item['id_menu']] ?? null;
+                                                $menuName = $menu?->nama ?? 'Unknown Menu';
+                                                $variant = $item['variasi_minuman'] ? ' (' . VariantBeverage::from($item['variasi_minuman'])->name . ')' : '';
+                                                $qty = $item['jumlah'];
                                                 $price = Numeric::rupiah(str_replace('.', '', $item['price']));
-                                                $subtotal = Numeric::rupiah($item['subtotal_price']);
+                                                $subtotal = Numeric::rupiah($item['subtotal_harga']);
 
                                                 $rows[] = "
                                                 {$menuName}{$variant}
@@ -188,15 +197,15 @@ class ReservationResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('customer_name')
+                Tables\Columns\TextColumn::make('nama_pelanggan')
                     ->label('Pelanggan')
                     ->placeholder('-')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('datetime')
+                Tables\Columns\TextColumn::make('waktu')
                     ->label('Tanggal')
                     ->dateTime('j M Y H:i')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('number_of_people')
+                Tables\Columns\TextColumn::make('jumlah_orang')
                     ->label('Jumlah Orang')
                     ->suffix(' Orang')
                     ->numeric()
@@ -204,10 +213,10 @@ class ReservationResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->getStateUsing(function (Reservation $record): string {
-                        $total = $record->order->orderMenus->sum('subtotal_price');
+                        $total = $record->order->orderMenus->sum('subtotal_harga');
                         $amount = $record->order->payments
                             ->where('status', PaymentStatus::Paid)
-                            ->sum('amount');
+                            ->sum('jumlah');
 
                         if ($amount == 0) {
                             return 'Belum Bayar';
@@ -221,22 +230,22 @@ class ReservationResource extends Resource
             ->actions([
                 Tables\Actions\DeleteAction::make()
                     ->iconButton()
-                    ->visible(function(Reservation $record): bool {
+                    ->visible(function (Reservation $record): bool {
                         return $record->order->payments
                             ->where('status', PaymentStatus::Paid)
-                            ->sum('amount') === 0;
+                            ->sum('jumlah') === 0;
                     }),
                 Tables\Actions\EditAction::make()
                     ->iconButton()
-                    ->visible(function(Reservation $record): bool {
-                        $total = $record->order->orderMenus->sum('subtotal_price');
+                    ->visible(function (Reservation $record): bool {
+                        $total = $record->order->orderMenus->sum('subtotal_harga');
                         return $record->order->payments
                             ->where('status', PaymentStatus::Paid)
-                            ->sum('amount') !== $total;
+                            ->sum('jumlah') !== $total;
                     })
             ])
             ->filters([
-                Tables\Filters\Filter::make('datetime')
+                Tables\Filters\Filter::make('waktu')
                     ->label('Tanggal')
                     ->form([
                         Forms\Components\DatePicker::make('date')
@@ -253,7 +262,7 @@ class ReservationResource extends Resource
                     })
                     ->query(function (Builder $query, array $data): Builder {
                         $query->when($data['date'], function (Builder $query) use ($data) {
-                            $query->whereDate('datetime', $data['date']);
+                            $query->whereDate('waktu', $data['date']);
                         });
 
                         return $query;
@@ -281,40 +290,40 @@ class ReservationResource extends Resource
                             return $orderQuery->whereRaw(match ($status) {
                                 'Belum Bayar' => '
                                     (
-                                        SELECT COALESCE(SUM(amount), 0)
-                                        FROM payments
-                                        WHERE payments.order_id = orders.id
-                                        AND payments.status = ?
+                                        SELECT COALESCE(SUM(jumlah), 0)
+                                        FROM pembayaran
+                                        WHERE pembayaran.id_pemesanan = pemesanan.id
+                                        AND pembayaran.status = ?
                                     ) = 0
                                 ',
                                 'DP' => '
                                     (
-                                        SELECT COALESCE(SUM(amount), 0)
-                                        FROM payments
-                                        WHERE payments.order_id = orders.id
-                                        AND payments.status = ?
+                                        SELECT COALESCE(SUM(jumlah), 0)
+                                        FROM pembayaran
+                                        WHERE pembayaran.id_pemesanan = pemesanan.id
+                                        AND pembayaran.status = ?
                                     ) < (
-                                        SELECT SUM(subtotal_price)
-                                        FROM order_menus
-                                        WHERE order_menus.order_id = orders.id
+                                        SELECT SUM(subtotal_harga)
+                                        FROM pemesanan_menu
+                                        WHERE pemesanan_menu.id_pemesanan = pemesanan.id
                                     )
                                     AND (
-                                        SELECT COALESCE(SUM(amount), 0)
-                                        FROM payments
-                                        WHERE payments.order_id = orders.id
-                                        AND payments.status = ?
+                                        SELECT COALESCE(SUM(jumlah), 0)
+                                        FROM pembayaran
+                                        WHERE pembayaran.id_pemesanan = pemesanan.id
+                                        AND pembayaran.status = ?
                                     ) > 0
                                 ',
                                 'Dibayar' => '
                                     (
-                                        SELECT COALESCE(SUM(amount), 0)
-                                        FROM payments
-                                        WHERE payments.order_id = orders.id
-                                        AND payments.status = ?
+                                        SELECT COALESCE(SUM(jumlah), 0)
+                                        FROM pembayaran
+                                        WHERE pembayaran.id_pemesanan = pemesanan.id
+                                        AND pembayaran.status = ?
                                     ) = (
-                                        SELECT SUM(subtotal_price)
-                                        FROM order_menus
-                                        WHERE order_menus.order_id = orders.id
+                                        SELECT SUM(subtotal_harga)
+                                        FROM pemesanan_menu
+                                        WHERE pemesanan_menu.id_pemesanan = pemesanan.id
                                     )
                                 ',
                             }, match ($status) {
@@ -346,9 +355,9 @@ class ReservationResource extends Resource
     public static function getOrderMenuSchema(): array
     {
         return [
-            Forms\Components\Select::make('menu_id')
+            Forms\Components\Select::make('id_menu')
                 ->options(
-                    fn(): Collection => Menu::available()->pluck('name', 'id')
+                    fn(): Collection => Menu::available()->pluck('nama', 'id')
                 )
                 ->label('Menu')
                 ->searchable()
@@ -369,19 +378,19 @@ class ReservationResource extends Resource
                         $menuPrices = static::getMenuPrices($state);
 
                         if ($menuPrices->count() === 1) {
-                            $price = $menuPrices->first()->price;
+                            $price = $menuPrices->first()->harga;
                             $set('price', Numeric::rupiah($price));
-                            $set('subtotal_price', $price * ($get('quantity') ?? 1));
+                            $set('subtotal_harga', $price * ($get('jumlah') ?? 1));
                         } else {
                             $set('price', 0);
-                            $set('subtotal_price', 0);
+                            $set('subtotal_harga', 0);
                         }
 
-                        $set('quantity', 1);
+                        $set('jumlah', 1);
                     } else {
                         $set('price', 0);
-                        $set('quantity', null);
-                        $set('subtotal_price', 0);
+                        $set('jumlah', null);
+                        $set('subtotal_harga', 0);
                     }
                 })
                 ->disableOptionWhen(function (int $value, Get $get): bool {
@@ -390,8 +399,8 @@ class ReservationResource extends Resource
                     $otherItems = $allItems->filter(fn($item, $key) => $key !== $currentPath);
 
                     $usedVariants = $otherItems
-                        ->where('menu_id', $value)
-                        ->pluck('variant_beverage')
+                        ->where('id_menu', $value)
+                        ->pluck('variasi_minuman')
                         ->filter()
                         ->map(fn($v) => is_object($v) ? $v->value : $v)
                         ->unique()
@@ -400,17 +409,17 @@ class ReservationResource extends Resource
                     $menuPrices = static::getMenuPrices($value);
 
                     if ($menuPrices->count() <= 1) {
-                        return $otherItems->pluck('menu_id')->contains($value);
+                        return $otherItems->pluck('id_menu')->contains($value);
                     }
 
                     $menuVariants = $menuPrices
-                        ->pluck('variant_beverage')
+                        ->pluck('variasi_minuman')
                         ->map(fn($v) => is_object($v) ? $v->value : $v)
                         ->unique();
 
                     return $menuVariants->diff($usedVariants)->isEmpty();
                 }),
-            Forms\Components\Select::make('variant_beverage')
+            Forms\Components\Select::make('variasi_minuman')
                 ->label('Varian')
                 ->placeholder('-- Varian --')
                 ->options(VariantBeverage::select())
@@ -418,19 +427,19 @@ class ReservationResource extends Resource
                 ->columnSpan(2)
                 ->disableOptionWhen(function (string $value, Get $get): bool {
                     $currentPath = $get('__component.path');
-                    $menuId = $get('menu_id');
+                    $menuId = $get('id_menu');
 
                     if (!$menuId) return false;
 
                     $allItems = collect($get('../../orderMenus'))->filter();
 
                     return $allItems
-                        ->filter(fn($item, $key): bool => $key !== $currentPath && $item['menu_id'] === $menuId)
-                        ->contains('variant_beverage', $value);
+                        ->filter(fn($item, $key): bool => $key !== $currentPath && $item['id_menu'] === $menuId)
+                        ->contains('variasi_minuman', $value);
                 })
                 ->visible(function (Get $get): bool {
-                    if ($get('menu_id')) {
-                        if (static::getMenuPrices($get('menu_id'))->count() > 1) {
+                    if ($get('id_menu')) {
+                        if (static::getMenuPrices($get('id_menu'))->count() > 1) {
                             return true;
                         }
                     }
@@ -439,30 +448,30 @@ class ReservationResource extends Resource
                 })
                 ->afterStateUpdated(function (Set $set, Get $get, ?string $state): void {
                     if ($state) {
-                        $menuPrices = static::getMenuPrices($get('menu_id'))
-                            ->where('variant_beverage', $state)
+                        $menuPrices = static::getMenuPrices($get('id_menu'))
+                            ->where('variasi_minuman', $state)
                             ->first();
 
-                        $set('price', Numeric::rupiah($menuPrices->price));
-                        $set('subtotal_price', $menuPrices->price * ($get('quantity') ?? 1));
+                        $set('price', Numeric::rupiah($menuPrices->harga));
+                        $set('subtotal_harga', $menuPrices->harga * ($get('jumlah') ?? 1));
                     } else {
                         $set('price', 0);
-                        $set('subtotal_price', 0);
+                        $set('subtotal_harga', 0);
                     }
                 }),
-            Forms\Components\TextInput::make('quantity')
+            Forms\Components\TextInput::make('jumlah')
                 ->label('Jumlah')
                 ->numeric()
                 ->minValue(1)
                 ->extraInputAttributes(['min' => 1])
                 ->required()
-                ->live()
+                ->live(debounce: 500)
                 ->afterStateUpdated(function (Set $set, Get $get, ?int $state): void {
                     if ($state) {
                         $price = str_replace('.', '', $get('price'));
-                        $set('subtotal_price', $price * $state);
+                        $set('subtotal_harga', $price * $state);
                     } else {
-                        $set('subtotal_price', 0);
+                        $set('subtotal_harga', 0);
                     }
                 }),
             Forms\Components\TextInput::make('price')
@@ -473,23 +482,23 @@ class ReservationResource extends Resource
                 ->columnSpan(2)
                 ->afterStateHydrated(function (Get $get, Set $set, string $operation): void {
                     if ($operation === 'edit') {
-                        $price = static::getMenuPrices($get('menu_id'))
-                            ->where('variant_beverage', $get('variant_beverage'))
+                        $price = static::getMenuPrices($get('id_menu'))
+                            ->where('variasi_minuman', $get('variasi_minuman'))
                             ->first();
 
                         if ($price) {
-                            $set('price', Numeric::rupiah($price->price));
+                            $set('price', Numeric::rupiah($price->harga));
                         } else {
                             $set('price', 0);
                         }
                     }
                 }),
-            Forms\Components\Hidden::make('subtotal_price')
+            Forms\Components\Hidden::make('subtotal_harga')
                 ->stripCharacters('.')
                 ->default(0)
                 ->afterStateHydrated(function (Set $set, ?int $state): void {
                     if ($state) {
-                        $set('subtotal_price', $state);
+                        $set('subtotal_harga', $state);
                     }
                 })
         ];
@@ -498,7 +507,7 @@ class ReservationResource extends Resource
     public static function getMenuPrices(?int $menuId): Collection
     {
         return once(function () use ($menuId): Collection {
-            return MenuPrice::where('menu_id', $menuId)->get();
+            return MenuPrice::where('id_menu', $menuId)->get();
         });
     }
 }

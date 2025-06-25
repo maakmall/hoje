@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Table extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string|null
+     */
+    protected $table = 'meja';
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool
@@ -20,8 +27,8 @@ class Table extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'number',
-        'location_id',
+        'nomor',
+        'id_lokasi',
     ];
 
     /**
@@ -29,6 +36,6 @@ class Table extends Model
      */
     public function location(): BelongsTo
     {
-        return $this->belongsTo(Location::class);
+        return $this->belongsTo(Location::class, 'id_lokasi');
     }
 }

@@ -10,6 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Payment extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string|null
+     */
+    protected $table = 'pembayaran';
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool
@@ -23,15 +30,15 @@ class Payment extends Model
      */
     protected $fillable = [
         'id',
-        'order_id',
-        'amount',
-        'method',
+        'id_pemesanan',
+        'jumlah',
+        'metode',
         'status',
-        'datetime',
-        'transaction_id',
-        'va_number',
-        'qr_url',
-        'proof',
+        'waktu',
+        'id_transaksi',
+        'akun_virtual',
+        'tautan',
+        'link',
     ];
 
     /**
@@ -56,7 +63,7 @@ class Payment extends Model
     protected function casts(): array
     {
         return [
-            'method' => PaymentMethod::class,
+            'metode' => PaymentMethod::class,
             'status' => PaymentStatus::class,
         ];
     }
@@ -66,6 +73,6 @@ class Payment extends Model
      */
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Order::class, 'id_pemesanan');
     }
 }

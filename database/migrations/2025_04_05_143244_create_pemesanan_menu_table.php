@@ -12,17 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('order_menus', function (Blueprint $table) {
+        Schema::create('pemesanan_menu', function (Blueprint $table) {
             $table->id();
-            $table->char('order_id', 12);
-            $table->foreignId('menu_id')->constrained();
-            $table->enum('variant_beverage', VariantBeverage::values())->nullable();
-            $table->integer('quantity');
-            $table->integer('subtotal_price');
+            $table->char('id_pemesanan', 12);
+            $table->foreignId('id_menu')->constrained('menu');
+            $table->enum('variasi_minuman', VariantBeverage::values())->nullable();
+            $table->integer('jumlah');
+            $table->integer('subtotal_harga');
 
-            $table->foreign('order_id')
+            $table->foreign('id_pemesanan')
                 ->references('id')
-                ->on('orders')
+                ->on('pemesanan')
                 ->cascadeOnDelete();
         });
     }
@@ -32,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('order_menus');
+        Schema::dropIfExists('pemesanan_menu');
     }
 };

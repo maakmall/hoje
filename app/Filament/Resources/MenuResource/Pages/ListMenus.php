@@ -25,9 +25,9 @@ class ListMenus extends ListRecords
         return [
             'all' => Tab::make('Semua'),
             MenuCategory::Food->value => Tab::make(MenuCategory::Food->label())
-                ->modifyQueryUsing(fn(Builder $query): Builder => $query->where('category', MenuCategory::Food)),
+                ->modifyQueryUsing(fn(Builder $query): Builder => $query->where('kategori', MenuCategory::Food)),
             MenuCategory::Beverage->value => Tab::make(MenuCategory::Beverage->label())
-                ->modifyQueryUsing(fn(Builder $query): Builder => $query->where('category', MenuCategory::Beverage)),
+                ->modifyQueryUsing(fn(Builder $query): Builder => $query->where('kategori', MenuCategory::Beverage)),
         ];
     }
 

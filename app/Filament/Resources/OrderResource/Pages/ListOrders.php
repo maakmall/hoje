@@ -37,14 +37,14 @@ class ListOrders extends ListRecords
                         ->required(),
                 ])
                 ->action(function (array $data) {
-                    $orders = Order::whereDate('datetime', '>=', $data['start'])
-                        ->whereDate('datetime', '<=', $data['end'])
-                        ->withSum('orderMenus', 'subtotal_price')
-                        ->withSum('orderMenus', 'quantity')
+                    $orders = Order::whereDate('waktu', '>=', $data['start'])
+                        ->whereDate('waktu', '<=', $data['end'])
+                        ->withSum('orderMenus', 'subtotal_harga')
+                        ->withSum('orderMenus', 'jumlah')
                         ->whereHas('payments', function(Builder $query): void {
                             $query->where('status', PaymentStatus::Paid);
                         })
-                        ->orderBy('datetime')
+                        ->orderBy('waktu')
                         ->get();
 
                     $start = Carbon::parse($data['start']);
@@ -54,8 +54,8 @@ class ListOrders extends ListRecords
                         'orders' => $orders,
                         'start' => $start,
                         'end' => $end,
-                        'total' => $orders->sum('order_menus_sum_subtotal_price'),
-                        'total_items' => $orders->sum('order_menus_sum_quantity'),
+                        'total' => $orders->sum('order_menus_sum_subtotal_harga'),
+                        'total_items' => $orders->sum('order_menus_sum_jumlah'),
                     ]);
 
                     $filename = 'laporan-pesanan-' . $start->format('d-m-Y') . '-' . $end->format('d-m-Y') . '.pdf';

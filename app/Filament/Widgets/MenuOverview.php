@@ -12,11 +12,11 @@ class MenuOverview extends BaseWidget
 {
     protected function getStats(): array
     {
-        $menus = Menu::select('id', 'category')->get();
-        $foods = $menus->where('category', 'food')->count();
-        $beverage = $menus->where('category', 'beverage')->count();
+        $menus = Menu::select('id', 'kategori')->get();
+        $foods = $menus->where('kategori', 'food')->count();
+        $beverage = $menus->where('kategori', 'beverage')->count();
 
-        $reservations = Reservation::whereDate('datetime', now()->toDateString())->count();
+        $reservations = Reservation::whereDate('waktu', now()->toDateString())->count();
 
         return [
             Stat::make('Reservasi', $reservations)

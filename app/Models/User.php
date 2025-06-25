@@ -18,16 +18,23 @@ class User extends Authenticatable implements FilamentUser, HasName
     use HasFactory, Notifiable;
 
     /**
+     * The table associated with the model.
+     *
+     * @var string|null
+     */
+    protected $table = 'pengguna';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'nama',
         'email',
         'password',
-        'phone',
-        'role'
+        'telepon',
+        // 'role'
     ];
 
     /**
@@ -55,7 +62,7 @@ class User extends Authenticatable implements FilamentUser, HasName
     {
         return [
             'password' => 'hashed',
-            'role' => Role::class
+            // 'role' => Role::class
         ];
     }
 
@@ -72,6 +79,6 @@ class User extends Authenticatable implements FilamentUser, HasName
      */
     public function getFilamentName(): string
     {
-        return $this->name;
+        return $this->nama;
     }
 }

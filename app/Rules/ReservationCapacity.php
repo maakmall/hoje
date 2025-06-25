@@ -36,18 +36,18 @@ class ReservationCapacity implements ValidationRule, DataAwareRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $location = DB::table('locations')->find($this->data['data']['location_id']);
+        $location = DB::table('lokasi')->find($this->data['data']['id_lokasi']);
         if (!$location) {
             $fail('Lokasi tidak ditemukan.');
         }
 
-        $datetime = Carbon::parse($this->data['data']['datetime']);
-        $totalBooked = DB::table('reservations')
-            ->whereDate('datetime', $datetime)
-            ->where('location_id', $this->data['data']['location_id'])
-            ->sum('number_of_people');
+        $datetime = Carbon::parse($this->data['data']['waktu']);
+        $totalBooked = DB::table('reservasi')
+            ->whereDate('waktu', $datetime)
+            ->where('id_lokasi', $this->data['data']['id_lokasi'])
+            ->sum('jumlah_orang');
 
-        $availableCapacity = $location->capacity - $totalBooked;
+        $availableCapacity = $location->kapasitas - $totalBooked;
 
         if ($value > $availableCapacity) {
             $fail("Kapasitas penuh. Tersisa $availableCapacity kursi.");

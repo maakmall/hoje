@@ -193,7 +193,7 @@
                                         <option value="">-- Select Menu --</option>
                                         @foreach ($menus as $menu)
                                             <option value="{{ $menu->id }}" data-price="{{ json_encode($menu->prices) }}">
-                                                ({{ $menu->category->name }}) {{ $menu->name }}
+                                                ({{ $menu->kategori->name }}) {{ $menu->nama }}
                                             </option>
                                         @endforeach
                                     </select>

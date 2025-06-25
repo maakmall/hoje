@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\MenuCategory;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,10 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tables', function (Blueprint $table) {
+        Schema::create('menu', function (Blueprint $table) {
             $table->id();
-            $table->integer('number');
-            $table->foreignId('location_id')->constrained();
+            $table->string('nama', 100);
+            $table->text('deskripsi')->nullable();
+            $table->string('gambar', 100);
+            $table->enum('kategori', MenuCategory::values());
+            $table->boolean('tersedia');
         });
     }
 
@@ -23,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tables');
+        Schema::dropIfExists('menu');
     }
 };

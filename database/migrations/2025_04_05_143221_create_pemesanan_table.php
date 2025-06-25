@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('orders', function (Blueprint $table) {
+        Schema::create('pemesanan', function (Blueprint $table) {
             $table->char('id', 12)->primary();
-            $table->char('reservation_id', 12)->nullable();
-            $table->foreignId('table_id')->nullable()->constrained();
-            $table->datetime('datetime');
+            $table->char('id_reservasi', 12)->nullable();
+            $table->foreignId('id_meja')->nullable()->constrained('meja');
+            $table->datetime('waktu');
 
-            $table->foreign('reservation_id')
+            $table->foreign('id_reservasi')
                 ->references('id')
-                ->on('reservations')
+                ->on('reservasi')
                 ->cascadeOnDelete();
         });
     }
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('orders');
+        Schema::dropIfExists('pemesanan');
     }
 };

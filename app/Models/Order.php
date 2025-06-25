@@ -9,6 +9,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Order extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string|null
+     */
+    protected $table = 'pemesanan';
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool
@@ -22,9 +29,9 @@ class Order extends Model
      */
     protected $fillable = [
         'id',
-        'reservation_id',
-        'table_id',
-        'datetime',
+        'id_reservasi',
+        'id_meja',
+        'waktu',
     ];
 
     /**
@@ -46,7 +53,7 @@ class Order extends Model
      */
     public function reservation(): BelongsTo
     {
-        return $this->belongsTo(Reservation::class);
+        return $this->belongsTo(Reservation::class, 'id_reservasi');
     }
 
     /**
@@ -54,7 +61,7 @@ class Order extends Model
      */
     public function table(): BelongsTo
     {
-        return $this->belongsTo(Table::class);
+        return $this->belongsTo(Table::class, 'id_meja');
     }
 
     /**
@@ -62,7 +69,7 @@ class Order extends Model
      */
     public function orderMenus(): HasMany
     {
-        return $this->hasMany(OrderMenu::class);
+        return $this->hasMany(OrderMenu::class, 'id_pemesanan');
     }
 
     /**
@@ -70,6 +77,6 @@ class Order extends Model
      */
     public function payments(): HasMany
     {
-        return $this->hasMany(Payment::class);
+        return $this->hasMany(Payment::class, 'id_pemesanan');
     }
 }

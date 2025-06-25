@@ -28,7 +28,7 @@ class CreateOrder extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         return DB::transaction(function() use ($data): Model {
-            $data['datetime'] = now()->toDateTimeString();
+            $data['waktu'] = now()->toDateTimeString();
             $orderMenus = $data['orderMenus'] ?? [];
             $paymentMethod = PaymentMethod::from($data['payment_method']);
     
@@ -37,13 +37,13 @@ class CreateOrder extends CreateRecord
             $order = static::getModel()::create($data);
             $order->orderMenus()->createMany($orderMenus);
     
-            $amount = $order->orderMenus->sum('subtotal_price');
+            $amount = $order->orderMenus->sum('subtotal_harga');
     
             $payment = [
                 'id' => Numeric::generateId('payments'),
-                'datetime' => $order->datetime,
-                'amount' => $amount,
-                'method' => $paymentMethod,
+                'waktu' => $order->waktu,
+                'jumlah' => $amount,
+                'metode' => $paymentMethod,
                 'status' => PaymentStatus::Pending,
             ];
     
@@ -58,6 +58,10 @@ class CreateOrder extends CreateRecord
                         'order_id' => $order->id,
                         'gross_amount' => $amount,
                     ],
+                    'custom_expiry' => [
+                        'unit' => 'day',
+                        'expiry_duration' => 1,
+                    ],
                 ];
     
                 if ($paymentMethod === PaymentMethod::Transfer) {
@@ -68,9 +72,9 @@ class CreateOrder extends CreateRecord
     
                 $response = $midtrans->createTransaction($payload);
     
-                $payment['transaction_id'] = $response->transaction_id ?? null;
-                $payment['va_number'] = $response->va_numbers[0]->va_number ?? null;
-                $payment['qr_url'] = $response->actions[0]->url ?? null;
+                $payment['id_transaksi'] = $response->transaction_id ?? null;
+                $payment['akun_virtual'] = $response->va_numbers[0]->va_number ?? null;
+                $payment['tautan'] = $response->actions[0]->url ?? null;
             }
     
             $this->paymentId = $order->payments()->create($payment)->id;

@@ -22,15 +22,15 @@ class TableResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('number')
+                Forms\Components\TextInput::make('nomor')
                     ->label('Nomor')
                     ->required()
                     ->numeric()
                     ->minValue(1)
                     ->unique(ignoreRecord: true),
-                Forms\Components\Select::make('location_id')
+                Forms\Components\Select::make('id_lokasi')
                     ->label('Lokasi')
-                    ->relationship('location', 'name')
+                    ->relationship('location', 'nama')
                     ->required(),
             ]);
     }
@@ -39,17 +39,17 @@ class TableResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('number')
+                Tables\Columns\TextColumn::make('nomor')
                     ->label('No')
                     ->numeric()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('location.name')
+                Tables\Columns\TextColumn::make('location.nama')
                     ->label('Lokasi')
                     ->numeric(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('location_id')
-                    ->relationship('location', 'name')
+                    ->relationship('location', 'nama')
                     ->label('Lokasi'),
             ])
             ->actions([

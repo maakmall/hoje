@@ -21,36 +21,45 @@ class EditReservation extends EditRecord
                     Forms\Components\Section::make()
                         ->columns()
                         ->schema([
-                            Forms\Components\TextInput::make('customer_name')
+                            Forms\Components\TextInput::make('nama_pelanggan')
                                 ->label('Nama Pelanggan')
                                 ->required()
                                 ->columnSpanFull(),
-                            Forms\Components\Select::make('location_id')
-                                ->label('Lokasi')
-                                ->relationship('location', 'name')
+                            Forms\Components\TextInput::make('email_pelanggan')
+                                ->label('Email Pelanggan')
+                                ->required()
+                                ->email(),
+                            Forms\Components\TextInput::make('telepon_pelanggan')
+                                ->label('Telepon Pelanggan')
+                                ->tel()
                                 ->required(),
-                            Forms\Components\TextInput::make('number_of_people')
+                            Forms\Components\TextInput::make('jumlah_orang')
                                 ->label('Jumlah Orang')
                                 ->suffix('Orang')
                                 ->minValue(1)
                                 ->extraInputAttributes(['min' => 1])
                                 ->required()
                                 ->rules([new ReservationCapacity()])
-                                ->numeric(),
+                                ->numeric()
+                                ->columnSpanFull(),
                         ])
                 ])->columnSpan(2),
                 Forms\Components\Group::make([
                     Forms\Components\Section::make()
                         ->schema([
-                            Forms\Components\DateTimePicker::make('datetime')
+                            Forms\Components\DateTimePicker::make('waktu')
                                 ->label('Tanggal')
                                 ->minDate(now())
+                                ->required(),
+                            Forms\Components\Select::make('id_lokasi')
+                                ->label('Lokasi')
+                                ->relationship('location', 'nama')
                                 ->required(),
                         ])
                 ])->columnSpan(1),
                 Forms\Components\Section::make()
                     ->schema([
-                        Forms\Components\Textarea::make('notes')
+                        Forms\Components\Textarea::make('catatan')
                             ->label('Catatan')
                             ->placeholder('Tulis catatan tambahan di sini')
                     ])

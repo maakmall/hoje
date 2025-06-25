@@ -10,6 +10,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Reservation extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string|null
+     */
+    protected $table = 'reservasi';
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool
@@ -23,11 +30,13 @@ class Reservation extends Model
      */
     protected $fillable = [
         'id',
-        'customer_name',
-        'datetime',
-        'location_id',
-        'number_of_people',
-        'notes',
+        'nama_pelanggan',
+        'email_pelanggan',
+        'telepon_pelanggan',
+        'waktu',
+        'id_lokasi',
+        'jumlah_orang',
+        'catatan',
     ];
 
     /**
@@ -52,7 +61,7 @@ class Reservation extends Model
     protected function casts(): array
     {
         return [
-            'datetime' => 'datetime',
+            'waktu' => 'datetime',
         ];
     }
 
@@ -61,7 +70,7 @@ class Reservation extends Model
      */
     public function location(): BelongsTo
     {
-        return $this->belongsTo(Location::class);
+        return $this->belongsTo(Location::class, 'id_lokasi');
     }
 
     /**
@@ -69,11 +78,16 @@ class Reservation extends Model
      */
     public function order(): HasOne
     {
-        return $this->hasOne(Order::class);
+        return $this->hasOne(Order::class, 'id_reservasi');
     }
 
     public function orderMenus(): HasManyThrough
     {
-        return $this->hasManyThrough(OrderMenu::class, Order::class);
+        return $this->hasManyThrough(
+            OrderMenu::class,
+            Order::class,
+            'id_reservasi',
+            'id_pemesanan',
+        );
     }
 }

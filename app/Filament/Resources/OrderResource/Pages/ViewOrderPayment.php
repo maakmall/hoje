@@ -69,17 +69,17 @@ class ViewOrderPayment extends ViewRecord
                             ->alignCenter()
                             ->size(TextEntrySize::Large)
                             ->weight(FontWeight::SemiBold)
-                            ->getStateUsing(fn(): string => $this->payment->method->label()),
+                            ->getStateUsing(fn(): string => $this->payment->metode->label()),
                         Infolists\Components\TextEntry::make('va_number')
                             ->hiddenLabel()
                             ->alignCenter()
-                            ->visible(fn(): bool => (bool) $this->payment->va_number)
+                            ->visible(fn(): bool => (bool) $this->payment->akun_virtual)
                             ->size(TextEntrySize::Large)
                             ->weight(FontWeight::Bold)
                             ->getStateUsing(
                                 fn(): ?HtmlString => new HtmlString("
                                     <span class='text-2xl' style='letter-spacing: 3px;'>
-                                        VA : {$this->payment->va_number}
+                                        VA : {$this->payment->akun_virtual}
                                     </span>
                                 ")
                             ),
@@ -88,8 +88,8 @@ class ViewOrderPayment extends ViewRecord
                             ->width(300)
                             ->height(300)
                             ->alignCenter()
-                            ->visible(fn(): bool => (bool) $this->payment->qr_url)
-                            ->getStateUsing(fn(): ?string => $this->payment->qr_url),
+                            ->visible(fn(): bool => (bool) $this->payment->tautan)
+                            ->getStateUsing(fn(): ?string => $this->payment->tautan),
                         Infolists\Components\TextEntry::make('payment')
                             ->hiddenLabel()
                             ->prefix('Rp ')
@@ -97,7 +97,7 @@ class ViewOrderPayment extends ViewRecord
                             ->alignCenter()
                             ->size(TextEntrySize::Large)
                             ->weight(FontWeight::SemiBold)
-                            ->getStateUsing(fn(): float => $this->payment->amount)
+                            ->getStateUsing(fn(): float => $this->payment->jumlah)
                     ])
             ]);
     }

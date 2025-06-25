@@ -24,7 +24,7 @@
                             <h3 style="margin-top: 10px; margin-bottom: 20px;" id="totalAmount"></h3>
 
                             <div class="form-group" style="margin-bottom: 5px;" id="tableNumberGroup"></div>
-                            <div class="form-group">
+                            {{-- <div class="form-group">
                                 <label for="paymentMethod" class="control-label">
                                     Payment Method
                                 </label>
@@ -34,10 +34,10 @@
                                     <option value="qris">QRIS</option>
                                     <option value="transfer">Transfer BCA</option>
                                 </select>
-                            </div>
+                            </div> --}}
                             <div id="payment"></div>
 
-                            <button type="button" class="btn btn-primary btn-block" id="pay">Pay</button>
+                            <button type="button" class="btn btn-primary btn-block" id="pay">Order</button>
                         </div>
                     </div>
                 </div>
@@ -132,11 +132,11 @@
 
         $('#pay').click(async function() {
             $(this).attr('disabled', true).text('Processing...')
-            const paymentMethod = $('#paymentMethod').val()
+            // const paymentMethod = $('#paymentMethod').val()
             const table = new URLSearchParams(window.location.search).get('table')
             const cart = JSON.parse(localStorage.getItem('hoje_cart') || '[]')
 
-            if (!paymentMethod || cart.length === 0) {
+            if (cart.length === 0) {
                 Toastify({
                     text: "Payment method & cart must be filled!",
                     position: "center",
@@ -146,7 +146,7 @@
                     duration: 3000
                 }).showToast();
 
-                $(this).attr('disabled', false).text('Pay')
+                $(this).attr('disabled', false).text('Order')
 
                 return
             }
@@ -154,7 +154,7 @@
             const payload = {
                 _token: '{{ csrf_token() }}',
                 table,
-                payment_method: paymentMethod,
+                // payment_method: paymentMethod,
                 items: cart.map(item => ({
                     menu_id: item.menu_id,
                     qty: item.qty,
@@ -170,56 +170,71 @@
                     data: JSON.stringify(payload)
                 })
 
-                const payment = res.payment
+                // const payment = res.payment
                 
-                localStorage.setItem('hoje_order', JSON.stringify({
-                    order_id: res.order_id,
-                    payment_method: paymentMethod,
-                    payment: payment
-                }))
+                // localStorage.setItem('hoje_order', JSON.stringify({
+                //     order_id: res.order_id,
+                //     payment_method: paymentMethod,
+                //     payment: payment
+                // }))
 
                 // Hide select dropdown & show text label
-                $('#paymentMethod').hide()
-                $('#paymentMethodName')
-                    .show()
-                    .text(paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1))
+                // $('#paymentMethod').hide()
+                // $('#paymentMethodName')
+                //     .show()
+                //     .text(paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1))
 
                 // Ganti konten #payment sesuai metode
-                if (paymentMethod === 'qris') {
-                    $('#payment').html(`
-                        <div class="text-center">
-                            <p style="margin: 0;">Scan QRIS to make payment</p>
-                            <img src="${payment.qr_url}" width="100%">
-                        </div>
-                    `)
-                } else if (paymentMethod === 'transfer') {
-                    $('#payment').html(`
-                        <div>
-                            <p style="margin-bottom: 20px;">Please transfer to the following virtual account number:</p>
-                            <div class="text-center" style="margin: 10px 0;">
-                                <h4 style="display: inline;" id="vaNumber">${payment.va_number}</h4>
-                                <button id="copyVaBtn" style="border: none; background: none; cursor: pointer; margin-left: 5px;">
-                                    <i class="icon-copy"></i>
-                                </button>
-                            </div>
-                            <small id="copySuccess" style="display: none; color: green; text-align: center;">Copied!</small>
-                        </div>
-                    `)
-                }
+                // if (paymentMethod === 'qris') {
+                //     $('#payment').html(`
+                //         <div class="text-center">
+                //             <p style="margin: 0;">Scan QRIS to make payment</p>
+                //             <img src="${payment.qr_url}" width="100%">
+                //         </div>
+                //     `)
+                // } else if (paymentMethod === 'transfer') {
+                //     $('#payment').html(`
+                //         <div>
+                //             <p style="margin-bottom: 20px;">Please transfer to the following virtual account number:</p>
+                //             <div class="text-center" style="margin: 10px 0;">
+                //                 <h4 style="display: inline;" id="vaNumber">${payment.va_number}</h4>
+                //                 <button id="copyVaBtn" style="border: none; background: none; cursor: pointer; margin-left: 5px;">
+                //                     <i class="icon-copy"></i>
+                //                 </button>
+                //             </div>
+                //             <small id="copySuccess" style="display: none; color: green; text-align: center;">Copied!</small>
+                //         </div>
+                //     `)
+                // }
 
                 // Sembunyiin tombol dan ganti dengan input file buat upload bukti pembayaran
-                $('#pay').hide().after(`
-                    <form id="uploadForm" enctype="multipart/form-data">
-                        <input type="hidden" name="order_id" value="${res.order_id}">
-                        <div class="form-group" style="margin-top: 15px;">
-                            <label for="paymentProof">Upload Bukti Bayar</label>
-                            <input type="file" class="form-control" name="payment_proof" accept="image/*" required>
-                            <button type="submit" class="btn btn-success btn-block" style="margin-top:10px;">Upload</button>
-                        </div>
-                    </form>
-                `)
+                // $('#pay').hide().after(`
+                //     <form id="uploadForm" enctype="multipart/form-data">
+                //         <input type="hidden" name="order_id" value="${res.order_id}">
+                //         <div class="form-group" style="margin-top: 15px;">
+                //             <label for="paymentProof">Upload Bukti Bayar</label>
+                //             <input type="file" class="form-control" name="payment_proof" accept="image/*" required>
+                //             <button type="submit" class="btn btn-success btn-block" style="margin-top:10px;">Upload</button>
+                //         </div>
+                //     </form>
+                // `)
+
+                Toastify({
+                    text: "Order created successfully!",
+                    position: "center",
+                    style: {
+                        background: "linear-gradient(to right, #FF5F6D, #FFC371)",
+                    },
+                    duration: 3000
+                }).showToast();
+
+                $(this).hide()
+
+                localStorage.removeItem(cartKey)
+                localStorage.removeItem('hoje_order')
+
             } catch (error) {
-                $(this).attr('disabled', false).text('Pay')
+                $(this).attr('disabled', false).text('Order')
 
                 Toastify({
                     text: "Failed to create order!",

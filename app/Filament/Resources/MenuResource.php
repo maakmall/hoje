@@ -36,11 +36,11 @@ class MenuResource extends Resource
                     Forms\Components\Section::make()
                         ->columns()
                         ->schema([
-                            Forms\Components\TextInput::make('name')
+                            Forms\Components\TextInput::make('nama')
                                 ->label('Nama')
                                 ->required()
                                 ->maxLength(100),
-                            Forms\Components\Select::make('category')
+                            Forms\Components\Select::make('kategori')
                                 ->label('Kategori')
                                 ->options(MenuCategory::select())
                                 ->live()
@@ -50,7 +50,7 @@ class MenuResource extends Resource
                                 ->live()
                                 ->helperText('Centang jika menu ini memiliki varian (Hot & Cold)')
                                 ->visible(
-                                    fn(Get $get): bool => $get('category') == MenuCategory::Beverage->value
+                                    fn(Get $get): bool => $get('kategori') == MenuCategory::Beverage->value
                                 )
                                 ->columnSpanFull()
                                 ->afterStateHydrated(function (?Menu $record, Set $set, string $operation): void {
@@ -58,14 +58,14 @@ class MenuResource extends Resource
                                         $set('has_variant', true);
                                     }
                                 }),
-                            Forms\Components\Textarea::make('description')
+                            Forms\Components\Textarea::make('deskripsi')
                                 ->label('Deskripsi')
                                 ->hint('Opsional')
                                 ->columnSpanFull(),
                         ]),
                     Forms\Components\Section::make()
                         ->schema([
-                            Forms\Components\FileUpload::make('image')
+                            Forms\Components\FileUpload::make('gambar')
                                 ->label('Gambar')
                                 ->image()
                                 ->disk('r2')
@@ -76,7 +76,7 @@ class MenuResource extends Resource
                 Forms\Components\Group::make([
                     Forms\Components\Section::make()
                         ->schema([
-                            Forms\Components\Toggle::make('availability')
+                            Forms\Components\Toggle::make('tersedia')
                                 ->label('Tersedia')
                                 ->required()
                                 ->inline(false),
@@ -102,20 +102,20 @@ class MenuResource extends Resource
                                             $set(
                                                 'price',
                                                 $prices->firstWhere(
-                                                    'variant_beverage',
+                                                    'variasi_minuman',
                                                     VariantBeverage::Hot
-                                                )->price
+                                                )->harga
                                             );
 
                                             $set(
                                                 'price_cold',
                                                 $prices->firstWhere(
-                                                    'variant_beverage',
+                                                    'variasi_minuman',
                                                     VariantBeverage::Cold
-                                                )->price
+                                                )->harga
                                             );
                                         } else {
-                                            $set('price', $prices->first()->price);
+                                            $set('price', $prices->first()->harga);
                                         }
                                     }
                                 }),
@@ -127,7 +127,7 @@ class MenuResource extends Resource
                                 ->stripCharacters('.')
                                 ->prefix('Rp')
                                 ->visible(function (Get $get): bool {
-                                    return $get('has_variant') && $get('category') == MenuCategory::Beverage->value;
+                                    return $get('has_variant') && $get('kategori') == MenuCategory::Beverage->value;
                                 }),
                         ])
                 ]),
@@ -139,35 +139,35 @@ class MenuResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\Layout\Stack::make([
-                    Tables\Columns\ImageColumn::make('image')
+                    Tables\Columns\ImageColumn::make('gambar')
                         ->label('Gambar')
                         ->disk('r2')
                         ->defaultImageUrl(url('/images/logo-text.png'))
                         ->height('100%')
                         ->width('100%')
                         ->alignCenter(),
-                    Tables\Columns\TextColumn::make('name')
+                    Tables\Columns\TextColumn::make('nama')
                         ->label('Nama')
                         ->weight(FontWeight::Medium)
-                        ->description(fn(Menu $record): string => $record->description ?? '-')
+                        ->description(fn(Menu $record): string => $record->deskripsi ?? '-')
                         ->wrap()
                         ->searchable(),
-                    Tables\Columns\TextColumn::make('prices.price')
+                    Tables\Columns\TextColumn::make('prices.harga')
                         ->label('Harga')
                         ->formatStateUsing(function (Menu $record): string|HtmlString {
                             if ($record->prices->count() > 1) {
                                 $prices = $record->prices->implode(function (MenuPrice $price) {
-                                    return Numeric::rupiah($price->price, true) .
-                                        ' (' . $price->variant_beverage->name . ')';
+                                    return Numeric::rupiah($price->harga, true) .
+                                        ' (' . $price->variasi_minuman->name . ')';
                                 }, '<br>');
 
                                 return new HtmlString($prices);
                             }
 
-                            return Numeric::rupiah($record->prices->first()->price, true);
+                            return Numeric::rupiah($record->prices->first()->harga, true);
                         }),
                     Tables\Columns\Layout\Split::make([
-                        Tables\Columns\TextColumn::make('category')
+                        Tables\Columns\TextColumn::make('kategori')
                             ->label('Kategori')
                             ->badge()
                             ->color(fn(MenuCategory $state): string => match ($state->value) {
@@ -175,11 +175,11 @@ class MenuResource extends Resource
                                 'beverage' => 'gray',
                             })
                             ->formatStateUsing(fn(MenuCategory $state): string => $state->label()),
-                        Tables\Columns\IconColumn::make('availability')
+                        Tables\Columns\IconColumn::make('tersedia')
                             ->label('Tersedia')
                             ->alignCenter()
                             ->tooltip(
-                                fn(Menu $record): string => $record->availability ? 'Tersedia' : 'Tidak Tersedia'
+                                fn(Menu $record): string => $record->tersedia ? 'Tersedia' : 'Tidak Tersedia'
                             )
                             ->boolean(),
                     ])
@@ -190,7 +190,7 @@ class MenuResource extends Resource
                 'xl' => 3,
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('availability')
+                Tables\Filters\TernaryFilter::make('tersedia')
                     ->label('Tersedia')
                     ->placeholder('Semua')
                     ->trueLabel('Tersedia')

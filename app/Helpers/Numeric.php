@@ -31,6 +31,12 @@ class Numeric
             'reservations' => 'R',
             'payments' => 'P',
         };
+        
+        $table = match ($table) {
+            'orders' => 'pemesanan',
+            'reservations' => 'reservasi',
+            'payments' => 'pembayaran',
+        };
 
         $prefix .= $date;
 

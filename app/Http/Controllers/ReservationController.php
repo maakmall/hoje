@@ -33,14 +33,16 @@ class ReservationController extends Controller
     {
         $validated = $request->validate([
             'customer_name' => 'required|string|max:100',
+            'customer_phone' => 'required|string|max:15',
+            'customer_email' => 'required|string|email|max:50',
             'date' => ['required', 'string'],
             'number_of_people' => ['required', 'integer', 'min:1'],
-            'location_id' => 'required|exists:locations,id',
+            'location_id' => 'required|exists:lokasi,id',
             'notes' => 'nullable|string',
             'payment_method' => ['required', Rule::in(PaymentMethod::values())],
-            'table' => 'nullable|integer|exists:tables,id',
+            'table' => 'nullable|integer|exists:meja,id',
             'cart' => 'required|array|min:1',
-            'cart.*.menu_id' => 'required|exists:menus,id',
+            'cart.*.menu_id' => 'required|exists:menu,id',
             'cart.*.qty' => 'required|integer|min:1',
             'cart.*.variant' => ['nullable', Rule::in(VariantBeverage::values())],
         ]);
@@ -49,71 +51,73 @@ class ReservationController extends Controller
                 $datetime = Carbon::createFromFormat('m/d/Y h:i A', $validated['date']);
             } catch (\Exception $e) {
                 throw ValidationException::withMessages([
-                    'date' => 'Format tanggal tidak valid. Gunakan format: mm/dd/yyyy hh:mm AM/PM',
+                    'date' => 'Invalid date format. Please use "MM/DD/YYYY HH:MM AM/PM".',
                 ]);
             }
             
-            $totalBooked = Reservation::whereDate('datetime', $datetime)
-                ->where('location_id', $validated['location_id'])
-                ->sum('number_of_people');
+            $totalBooked = Reservation::whereDate('waktu', $datetime)
+                ->where('id_lokasi', $validated['location_id'])
+                ->sum('jumlah_orang');
 
             $location = Location::find($validated['location_id']);
 
-            $availableCapacity = $location->capacity - $totalBooked;
+            $availableCapacity = $location->kapasitas - $totalBooked;
 
             if ($validated['number_of_people'] > $availableCapacity) {
                 throw ValidationException::withMessages([
-                    'number_of_people' => "Kapasitas penuh. Tersisa $availableCapacity kursi.",
+                    'number_of_people' => "Full capacity reached for this location on the selected date. Available capacity: $availableCapacity",
                 ]);
             }
 
             $reservation = Reservation::create([
                 'id' => Numeric::generateId('reservations'),
-                'customer_name' => $validated['customer_name'],
-                'datetime' => $datetime,
-                'location_id' => $validated['location_id'],
-                'number_of_people' => $validated['number_of_people'],
-                'notes' => $validated['notes'] ?? null,
+                'nama_pelanggan' => $validated['customer_name'],
+                'telepon_pelanggan' => $validated['customer_phone'],
+                'email_pelanggan' => $validated['customer_email'],
+                'waktu' => $datetime,
+                'id_lokasi' => $validated['location_id'],
+                'jumlah_orang' => $validated['number_of_people'],
+                'catatan' => $validated['notes'] ?? null,
             ]);
 
             $order = $reservation->order()->create([
                 'id' => Numeric::generateId('orders'),
-                'datetime' => $datetime,
-                'table_id' => $validated['table'] ?? null,
+                'waktu' => $datetime,
+                // 'table_id' => $validated['table'] ?? null,
             ]);
 
             $orderMenusData = collect($validated['cart'])->map(function ($item) {
-                $price = MenuPrice::where('menu_id', $item['menu_id'])
-                    ->where('variant_beverage', $item['variant'] ?? null)
-                    ->value('price');
+                $price = MenuPrice::where('id_menu', $item['menu_id'])
+                    ->where('variasi_minuman', $item['variant'] ?? null)
+                    ->value('harga');
 
                 if (is_null($price)) {
                     throw ValidationException::withMessages([
-                        'cart' => ['Harga menu tidak ditemukan.'],
+                        'cart' => ['Invalid menu or variant selected.'],
                     ]);
                 }
 
                 return [
-                    'menu_id' => $item['menu_id'],
-                    'variant_beverage' => $item['variant'] ?? null,
-                    'quantity' => $item['qty'],
-                    'subtotal_price' => $price * $item['qty'],
+                    'id_menu' => $item['menu_id'],
+                    'variasi_minuman' => $item['variant'] ?? null,
+                    'jumlah' => $item['qty'],
+                    'subtotal_harga' => $price * $item['qty'],
                 ];
             });
 
             $order->orderMenus()->createMany($orderMenusData->toArray());
 
-            $amount = $orderMenusData->sum('subtotal_price');
+            $amount = $orderMenusData->sum('subtotal_harga');
             $amount -= $amount * 0.5; // potong DP 50%
 
             $paymentMethod = PaymentMethod::from($validated['payment_method']);
             $paymentData = [
                 'id' => Numeric::generateId('payments'),
-                'order_id' => $order->id,
-                'amount' => $amount,
-                'method' => $paymentMethod,
+                'id_pemesanan' => $order->id,
+                'jumlah' => $amount,
+                'metode' => $paymentMethod,
                 'status' => PaymentStatus::Pending,
-                'datetime' => $datetime,
+                'waktu' => $datetime,
             ];
 
             if ($paymentMethod === PaymentMethod::Cash) {
@@ -135,9 +139,9 @@ class ReservationController extends Controller
 
                 $response = $midtrans->createTransaction($payload);
 
-                $paymentData['transaction_id'] = $response->transaction_id ?? null;
-                $paymentData['va_number'] = $response->va_numbers[0]->va_number ?? null;
-                $paymentData['qr_url'] = $response->actions[0]->url ?? null;
+                $paymentData['id_transaksi'] = $response->transaction_id ?? null;
+                $paymentData['akun_virtual'] = $response->va_numbers[0]->va_number ?? null;
+                $paymentData['tautan'] = $response->actions[0]->url ?? null;
             }
 
             $payment = $order->payments()->create($paymentData);
@@ -145,8 +149,8 @@ class ReservationController extends Controller
             return response()->json([
                 'order_id' => $order->id,
                 'payment' => [
-                    'va_number' => $payment->va_number,
-                    'qr_url' => $payment->qr_url,
+                    'va_number' => $payment->akun_virtual,
+                    'qr_url' => $payment->tautan,
                 ],
             ]);
         });

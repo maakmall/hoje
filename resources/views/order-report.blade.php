@@ -29,10 +29,10 @@
                 <tr>
                     <td align="center">{{ $loop->iteration }}</td>
                     <td align="center">{{ $order->id }}</td>
-                    <td align="center">{{ Carbon::parse($order->datetime)->format('d-m-Y H:i') }}</td>
-                    <td align="center">{{ $order->order_menus_sum_quantity }}</td>
+                    <td align="center">{{ Carbon::parse($order->waktu)->format('d-m-Y H:i') }}</td>
+                    <td align="center">{{ $order->order_menus_sum_jumlah }}</td>
                     <td align="right">
-                        {{ Numeric::rupiah($order->order_menus_sum_subtotal_price, true) }}
+                        {{ Numeric::rupiah($order->order_menus_sum_subtotal_harga, true) }}
                     </td>
                 </tr>
             @endforeach

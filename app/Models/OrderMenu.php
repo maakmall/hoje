@@ -9,6 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class OrderMenu extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string|null
+     */
+    protected $table = 'pemesanan_menu';
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool
@@ -21,11 +28,11 @@ class OrderMenu extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'order_id',
-        'menu_id',
-        'variant_beverage',
-        'quantity',
-        'subtotal_price',
+        'id_pemesanan',
+        'id_menu',
+        'variasi_minuman',
+        'jumlah',
+        'subtotal_harga',
     ];
 
     /**
@@ -36,7 +43,7 @@ class OrderMenu extends Model
     protected function casts(): array
     {
         return [
-            'variant_beverage' => VariantBeverage::class,
+            'variasi_minuman' => VariantBeverage::class,
         ];
     }
 
@@ -47,7 +54,7 @@ class OrderMenu extends Model
      */
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Order::class, 'id_pemesanan');
     }
 
     /**
@@ -57,6 +64,6 @@ class OrderMenu extends Model
      */
     public function menu(): BelongsTo
     {
-        return $this->belongsTo(Menu::class);
+        return $this->belongsTo(Menu::class, 'id_menu');
     }
 }

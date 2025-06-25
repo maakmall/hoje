@@ -7,6 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 class Location extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string|null
+     */
+    protected $table = 'lokasi';
+
+    /**
      * Indicates if the model should be timestamped.
      *
      * @var bool
@@ -19,7 +26,7 @@ class Location extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'capacity'
+        'nama',
+        'kapasitas'
     ];
 }

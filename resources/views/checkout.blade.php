@@ -12,7 +12,7 @@
             </div>
             <div class="row row-padded">
                 <div class="col-md-8">
-                    <div class="fh5co-food-menu to-animate-2">
+                    <div class="fh5co-food-menu to-animate-2" style="position: relative; z-index: 1; padding: 20px;">
                         <h2 class="fh5co-drinks">Menu</h2>
                         <ul id="cartList"></ul>
                     </div>

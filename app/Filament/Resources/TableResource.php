@@ -57,7 +57,7 @@ class TableResource extends Resource
                     ->label('QR Code')
                     ->url(function (TableModel $record): string {
                         $QrCodeUrl = urlencode(url()->query('/menus', [
-                            'table' => $record->number
+                            'table' => $record->nomor
                         ]));
                         
                         return "https://api.qrserver.com/v1/create-qr-code?data=$QrCodeUrl";

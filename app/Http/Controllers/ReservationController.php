@@ -38,7 +38,7 @@ class ReservationController extends Controller
             'date' => ['required', 'string'],
             'number_of_people' => ['required', 'integer', 'min:1'],
             'location_id' => 'required|exists:lokasi,id',
-            'notes' => 'nullable|string',
+            'note' => 'nullable|string',
             'payment_method' => ['required', Rule::in(PaymentMethod::values())],
             'table' => 'nullable|integer|exists:meja,id',
             'cart' => 'required|array|min:1',
@@ -77,7 +77,7 @@ class ReservationController extends Controller
                 'waktu' => $datetime,
                 'id_lokasi' => $validated['location_id'],
                 'jumlah_orang' => $validated['number_of_people'],
-                'catatan' => $validated['notes'] ?? null,
+                'catatan' => $validated['note'] ?? null,
             ]);
 
             $order = $reservation->order()->create([
